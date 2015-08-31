@@ -9,4 +9,14 @@ function testParseInteger() {
     }
 }
 
+function testParseByteString() {
+    var byteStringInput = '5:abcdefghijZZZZ';
+    var correctResult = 'abcde';
+    var resultFromTest = bencode.parseByteString(byteStringInput);
+    if (correctResult !== resultFromTest){
+        throw new Error('Wrong String!!!');
+    }
+}
+
+testParseByteString();
 testParseInteger();
