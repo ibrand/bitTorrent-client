@@ -1,9 +1,25 @@
 
 // if startingNewDictionary
-var input = '5:abcdefghijZZZZ';
+var input = 'd5:abcdefghijZZZZ';
+var currentDataStructure = {};
 
-function parse(input) {
-    return parseByteString(input);
+function parse(currentDataStructure, input) {
+    if (startingNewDictionary(input)){
+        currentDataStructure = {};
+        parse(currentDataStructure, input.substring(1, input.length)); // remove the 'd' character
+    } else {
+        console.log('input '+input);
+        var array = parseByteString(input);
+        // console.log('array '+array);
+        return [currentDataStructure, array[0]];
+    }
+}
+
+function startingNewDictionary(input) {
+    if (input.charAt(0) === 'd'){
+        return true;
+    }
+    return false;
 }
 
 function parseInteger(input){
@@ -39,6 +55,9 @@ function parseByteString(input){
 
     return [byteStringContents, input.substring(i, input.length)];
 }
+
+var parsed = parse(currentDataStructure, input);
+console.log("CALLING PARSE "+parsed);
 
 parse.parseByteString = parseByteString;
 parse.parseInteger = parseInteger;
