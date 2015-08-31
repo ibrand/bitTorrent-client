@@ -1,9 +1,9 @@
 
 // if startingNewDictionary
-var input = 'i123456789ei12391581e';
+var input = '5:abcdefghijZZZZ';
 
 function parse(input) {
-    return parseInteger(input);
+    return parseByteString(input);
 }
 
 function parseInteger(input){
@@ -17,5 +17,30 @@ function parseInteger(input){
     return Number(compiledString);
 }
 
+function parseByteString(input){
+    var i = 0;
+    var lengthOfByteString = '';
+    charToExamine = input.charAt(i);
+
+    while (charToExamine != ':'){
+        lengthOfByteString += charToExamine;
+        i++;
+        charToExamine = input.charAt(i);
+    }
+    // then skip over the ':'
+    i++;
+    charToExamine = input.charAt(i);
+
+    lengthOfByteString = Number(lengthOfByteString);
+
+    var byteStringContents = input.substring(i, i+lengthOfByteString);
+
+    i = i+lengthOfByteString;
+    input = input.substring(i, input.length);
+
+    return byteStringContents;
+}
+
+parse.parseByteString = parseByteString;
 parse.parseInteger = parseInteger;
 module.exports = parse;
