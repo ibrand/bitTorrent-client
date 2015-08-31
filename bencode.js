@@ -14,7 +14,7 @@ function parseInteger(input){
         compiledString += input.charAt(i);
         i++;
     }
-    return Number(compiledString);
+    return [Number(compiledString), input.substring(i, input.length)];
 }
 
 function parseByteString(input){
@@ -34,11 +34,10 @@ function parseByteString(input){
     lengthOfByteString = Number(lengthOfByteString);
 
     var byteStringContents = input.substring(i, i+lengthOfByteString);
-
+    // ensure that we keep track of where we are in input
     i = i+lengthOfByteString;
-    input = input.substring(i, input.length);
 
-    return byteStringContents;
+    return [byteStringContents, input.substring(i, input.length)];
 }
 
 parse.parseByteString = parseByteString;
