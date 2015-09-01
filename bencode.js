@@ -1,27 +1,43 @@
+var DICTIONARY_END = 'DICTIONARY_END';
 
 function parse(input, currentDataStructure) {
     if (!input){
         return currentDataStructure;
     }
 
-    if (startingNewDictionary(input)){
+    else if (startingNewDictionary(input)){
         currentDataStructure = {};
         var results = parse(input.substring(1, input.length), currentDataStructure); // remove the 'd' character
+        while(results.result !== 'DICTIONARY_END'){
+            var key = results.result;
+            results = parse(results.remainingInput, currentDataStructure);
+            var value = results.result;
+            currentDataStructure[key] = value;
+            results = parse(results.remainingInput, currentDataStructure);
+        }
+        return packageResults(currentDataStructure, results.remainingInput);
+    }
 
-
-    } else if (startingByteString(input)){
+    else if (startingByteString(input)){
         return parseByteString(input);
     }
-    // console.log('input '+input);
-    var results = parseByteString(input);
-    return packageResults(currentDataStructure, results.remainingInput);
+
+    else if (endingDictionary(input)){
+        console.log('INSIDE endingDictionary');
+        return packageResults(DICTIONARY_END, input.substring(1, input.length));
+    }
 }
 
 function startingNewDictionary(input) {
     return input.charAt(0) === 'd';
 }
 
+function endingDictionary(input) {
+    return input.charAt(0) === 'e';
+}
+
 function startingByteString(input) {
+    // console.log('INSIDE startingByteString');
     return isNumber(input.charAt(0));
 }
 
@@ -69,7 +85,7 @@ function parseByteString(input){
     return packageResults(byteStringContents, input.substring(i, input.length));
 }
 
-var parsed = parse('d5:84322eee');
+var parsed = parse('d5:555553:333e');
 console.log("CALLING PARSE ", parsed);
 
 parse.parseByteString = parseByteString;
