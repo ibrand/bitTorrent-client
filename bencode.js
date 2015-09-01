@@ -1,17 +1,13 @@
 
-// if startingNewDictionary
-var input = 'd5:abcdefghijZZZZ';
-var currentDataStructure = {};
-
-function parse(currentDataStructure, input) {
+function parse(input, currentDataStructure) {
     if (startingNewDictionary(input)){
         currentDataStructure = {};
-        parse(currentDataStructure, input.substring(1, input.length)); // remove the 'd' character
+        return parse(input.substring(1, input.length), currentDataStructure); // remove the 'd' character
     } else {
         console.log('input '+input);
-        var array = parseByteString(input);
+        var results = parseByteString(input);
         // console.log('array '+array);
-        return [currentDataStructure, array[0]];
+        return packageResults(currentDataStructure, results.remainingInput);
     }
 }
 
@@ -22,6 +18,10 @@ function startingNewDictionary(input) {
     return false;
 }
 
+function packageResults(result, remainingInput){
+    return {result: result, remainingInput: remainingInput};
+}
+
 function parseInteger(input){
     // skip the 'i' at the beginning of the string
     var i = 1;
@@ -30,7 +30,8 @@ function parseInteger(input){
         compiledString += input.charAt(i);
         i++;
     }
-    return [Number(compiledString), input.substring(i, input.length)];
+    return packageResults(Number(compiledString), input.substring(i, input.length));
+    // return [Number(compiledString), input.substring(i, input.length)];
 }
 
 function parseByteString(input){
@@ -53,11 +54,11 @@ function parseByteString(input){
     // ensure that we keep track of where we are in input
     i = i+lengthOfByteString;
 
-    return [byteStringContents, input.substring(i, input.length)];
+    return packageResults(byteStringContents, input.substring(i, input.length));
 }
 
-var parsed = parse(currentDataStructure, input);
-console.log("CALLING PARSE "+parsed);
+var parsed = parse('d5:84322eee');
+console.log("CALLING PARSE ", parsed);
 
 parse.parseByteString = parseByteString;
 parse.parseInteger = parseInteger;
