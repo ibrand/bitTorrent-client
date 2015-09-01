@@ -1,6 +1,6 @@
 
 function parse(input, currentDataStructure) {
-    if (!remainingInput){
+    if (!input){
         return currentDataStructure;
     }
 
@@ -12,11 +12,9 @@ function parse(input, currentDataStructure) {
     } else if (startingByteString(input)){
         return parseByteString(input);
     }
-        console.log('input '+input);
-        var results = parseByteString(input);
-        // console.log('array '+array);
-        return packageResults(currentDataStructure, results.remainingInput);
-    }
+    // console.log('input '+input);
+    var results = parseByteString(input);
+    return packageResults(currentDataStructure, results.remainingInput);
 }
 
 function startingNewDictionary(input) {
