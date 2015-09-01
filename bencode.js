@@ -1,4 +1,5 @@
 var DICTIONARY_END = 'DICTIONARY_END';
+var LIST_END = 'LIST_END';
 
 function parse(input, currentDataStructure) {
     if (!input){
@@ -17,6 +18,15 @@ function parse(input, currentDataStructure) {
         }
         return packageResults(currentDataStructure, results.remainingInput);
     }
+    else if (startingNewList(input)){
+        currentDataStructure = [];
+        var results = parse(input.substring(1, input.length), currentDataStructure); // remove the 'l' character
+        while(results.result !== 'LIST_END'){
+            currentDataStructure.push(results.result);
+            var results = parse(results.remainingInput, currentDataStructure);
+        }
+        return packageResults(currentDataStructure, results.remainingInput);
+    }
 
     else if (startingByteString(input)){
         return parseByteString(input);
@@ -25,8 +35,14 @@ function parse(input, currentDataStructure) {
         return parseInteger(input);
     }
 
-    else if (endingDictionary(input)){
+    else if (endingList(input, currentDataStructure)){
+        console.log('INSIDE endingList');
+        return packageResults(LIST_END, input.substring(1, input.length));
+    }
+
+    else if (endingDictionary(input, currentDataStructure)){
         console.log('INSIDE endingDictionary');
+        console.log(input);
         return packageResults(DICTIONARY_END, input.substring(1, input.length));
     }
 }
@@ -35,8 +51,17 @@ function startingNewDictionary(input) {
     return input.charAt(0) === 'd';
 }
 
-function endingDictionary(input) {
-    return input.charAt(0) === 'e';
+function endingDictionary(input, currentDataStructure) {
+    return input.charAt(0) === 'e' && !(currentDataStructure instanceof Array);
+}
+
+
+function startingNewList(input) {
+    return input.charAt(0) === 'l';
+}
+
+function endingList(input, currentDataStructure) {
+    return input.charAt(0) === 'e' && (currentDataStructure instanceof Array);
 }
 
 function startingByteString(input) {
@@ -90,7 +115,7 @@ function parseByteString(input){
     return packageResults(byteStringContents, input.substring(i, input.length));
 }
 
-var parsed = parse('d5:555553:333i1234e4:4444e');
+var parsed = parse('di123el4:spami42eee');
 console.log("CALLING PARSE ", parsed);
 
 parse.parseByteString = parseByteString;
