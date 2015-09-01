@@ -1,9 +1,17 @@
 
 function parse(input, currentDataStructure) {
+    if (!remainingInput){
+        return currentDataStructure;
+    }
+
     if (startingNewDictionary(input)){
         currentDataStructure = {};
-        return parse(input.substring(1, input.length), currentDataStructure); // remove the 'd' character
-    } else {
+        var results = parse(input.substring(1, input.length), currentDataStructure); // remove the 'd' character
+
+
+    } else if (startingByteString(input)){
+        return parseByteString(input);
+    }
         console.log('input '+input);
         var results = parseByteString(input);
         // console.log('array '+array);
@@ -12,10 +20,16 @@ function parse(input, currentDataStructure) {
 }
 
 function startingNewDictionary(input) {
-    if (input.charAt(0) === 'd'){
-        return true;
-    }
-    return false;
+    return input.charAt(0) === 'd';
+}
+
+function startingByteString(input) {
+    return isNumber(input.charAt(0));
+}
+
+// Avoid double negatives when figuring out if characters are numbers
+function isNumber(character){
+    return !isNaN(character);
 }
 
 function packageResults(result, remainingInput){
