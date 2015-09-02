@@ -1,3 +1,13 @@
+// fs = require('fs');
+// var toDecode = '';
+// fs.readFile('testFile.torrent', 'utf8', function(err, data){
+//     if (err) {
+//         throw new Error('not a valid file!!!');
+//     }
+//     toDecode = data;
+// });
+// console.log(toDecode);
+
 var DICTIONARY_END = 'DICTIONARY_END';
 var LIST_END = 'LIST_END';
 
@@ -115,9 +125,11 @@ function parseByteString(input){
     return packageResults(byteStringContents, input.substring(i, input.length));
 }
 
-var parsed = parse('di123el4:spami42eee');
-console.log("CALLING PARSE ", parsed);
+// var parsed = parse('di123el4:spami42eee');
+// console.log("CALLING PARSE ", parsed);
 
-parse.parseByteString = parseByteString;
-parse.parseInteger = parseInteger;
-module.exports = parse;
+module.exports = {
+    parse: parse,
+    parseByteString: parseByteString,
+    parseInteger: parseInteger
+}
