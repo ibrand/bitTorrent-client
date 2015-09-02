@@ -1,12 +1,3 @@
-// fs = require('fs');
-// var toDecode = '';
-// fs.readFile('testFile.torrent', 'utf8', function(err, data){
-//     if (err) {
-//         throw new Error('not a valid file!!!');
-//     }
-//     toDecode = data;
-// });
-// console.log(toDecode);
 
 var DICTIONARY_END = 'DICTIONARY_END';
 var LIST_END = 'LIST_END';
