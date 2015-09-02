@@ -1,5 +1,20 @@
 var bencode = require('./bencode.js');
 
+function testParse(){
+    var fs = require('fs');
+    var decodedFile = {};
+
+    fs.readFile('testFile.torrent', 'utf8', function(err, data){
+        if (err) {
+            throw new Error('not a valid file!!!');
+        }
+        console.log('about to decode');
+        decodedFile = bencode.parse(data).result;
+        console.log(typeof decodedFile);
+        console.log('decodedFile',decodedFile);
+    });
+}
+
 function testParseInteger() {
     var integerInput = 'i5783247e';
     var correctResult = 5783247;
@@ -18,5 +33,6 @@ function testParseByteString() {
     }
 }
 
+testParse();
 testParseByteString();
 testParseInteger();
