@@ -4,12 +4,14 @@ function testParse(){
     var fs = require('fs');
     var decodedFile = {};
 
-    fs.readFile('testFile.torrent', 'utf8', function(err, data){
+    // read file in as a buffer
+    fs.readFile('testFile.torrent', function(err, buffer){
         if (err) {
             throw new Error('not a valid file!!!');
         }
         console.log('about to decode');
-        decodedFile = bencode.parse(data).result;
+        // pass the byte array into bencode's parse for decoding
+        decodedFile = bencode.parse(buffer).result;
         console.log(typeof decodedFile);
         console.log('decodedFile',decodedFile);
     });

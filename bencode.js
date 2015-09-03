@@ -3,6 +3,7 @@ var DICTIONARY_END = 'DICTIONARY_END';
 var LIST_END = 'LIST_END';
 
 function parse(input, currentDataStructure) {
+    
     if (!input){
         return currentDataStructure;
     }
@@ -12,8 +13,11 @@ function parse(input, currentDataStructure) {
         var results = parse(input.substring(1, input.length), currentDataStructure); // remove the 'd' character
         while(results.result !== 'DICTIONARY_END'){
             var key = results.result;
+            // turn the byte array into a string
+            // FUNCTION
             results = parse(results.remainingInput, currentDataStructure);
-            var value = results.result;
+            var value = results.result; // IF KEY IS PIECES leave as byte array
+            // otherwise make a string out of that array
             currentDataStructure[key] = value;
             results = parse(results.remainingInput, currentDataStructure);
         }
@@ -49,28 +53,28 @@ function parse(input, currentDataStructure) {
 }
 
 function startingNewDictionary(input) {
-    return input.charAt(0) === 'd';
+    return String.fromCharCode(input[0]) === 'd';
 }
 
 function endingDictionary(input, currentDataStructure) {
-    return input.charAt(0) === 'e' && !(currentDataStructure instanceof Array);
+    return String.fromCharCode(input[0]) === 'e' && !(currentDataStructure instanceof Array);
 }
 
 
 function startingNewList(input) {
-    return input.charAt(0) === 'l';
+    return String.fromCharCode(input[0]) === 'l';
 }
 
 function endingList(input, currentDataStructure) {
-    return input.charAt(0) === 'e' && (currentDataStructure instanceof Array);
+    return String.fromCharCode(input[0]) === 'e' && (currentDataStructure instanceof Array);
 }
 
 function startingByteString(input) {
-    return isNumber(input.charAt(0));
+    return isNumber(String.fromCharCode(input[0]));
 }
 
 function startingInteger(input) {
-    return input.charAt(0) === 'i';
+    return String.fromCharCode(input[0]) === 'i';
 }
 
 // Avoid double negatives when figuring out if characters are numbers
