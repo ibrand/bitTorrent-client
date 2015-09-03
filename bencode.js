@@ -2,32 +2,45 @@
 var DICTIONARY_END = 'DICTIONARY_END';
 var LIST_END = 'LIST_END';
 
-function parse(input, currentDataStructure) {
+// parse a bencoded file
+function parse(fileToParse){
+    var fs = require('fs');
+    var decodedFile = {};
+
+    var toDecode = fs.readFileSync(fileToParse);
+
+    // pass the byte array into _parse for decoding
+    decodedFile = _parse(toDecode).result;
+    return decodedFile;
+}
+
+// parse a bencoded byte string
+function _parse(input, currentDataStructure) {
     if (input.length === 0){
         return currentDataStructure;
     }
 
     else if (startingNewDictionary(input)){
         currentDataStructure = {};
-        var results = parse(input.slice(1), currentDataStructure); // remove the 'd' character
+        var results = _parse(input.slice(1), currentDataStructure); // remove the 'd' character
         while(results.result !== 'DICTIONARY_END'){
             // all keys must be Strings
             // so convert the byte array into a string
             var key = byteBufferToString(results.result);
-            results = parse(results.remainingInput, currentDataStructure);
+            results = _parse(results.remainingInput, currentDataStructure);
             var value = results.result; // value stays a byte buffer
 
             currentDataStructure[key] = value;
-            results = parse(results.remainingInput, currentDataStructure);
+            results = _parse(results.remainingInput, currentDataStructure);
         }
         return packageResults(currentDataStructure, results.remainingInput);
     }
     else if (startingNewList(input)){
         currentDataStructure = [];
-        var results = parse(input.slice(1), currentDataStructure); // remove the 'l' character
+        var results = _parse(input.slice(1), currentDataStructure); // remove the 'l' character
         while(results.result !== 'LIST_END'){
             currentDataStructure.push(results.result);
-            var results = parse(results.remainingInput, currentDataStructure);
+            var results = _parse(results.remainingInput, currentDataStructure);
         }
         return packageResults(currentDataStructure, results.remainingInput);
     }
