@@ -16,11 +16,9 @@ function parse(input, currentDataStructure) {
             // all keys must be Strings
             // so convert the byte array into a string
             var key = byteBufferToString(results.result);
-            console.log('KEY',key);
             results = parse(results.remainingInput, currentDataStructure);
-            var value = byteBufferToString(results.result);
-            // var value = results.result; // IF KEY IS PIECES leave as byte array
-            // otherwise make a string out of that array
+            var value = results.result; // value stays a byte buffer
+
             currentDataStructure[key] = value;
             results = parse(results.remainingInput, currentDataStructure);
         }
