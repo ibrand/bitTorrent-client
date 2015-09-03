@@ -3,8 +3,6 @@ var DICTIONARY_END = 'DICTIONARY_END';
 var LIST_END = 'LIST_END';
 
 function parse(input, currentDataStructure) {
-    debugger
-
     if (input.length === 0){
         return currentDataStructure;
     }
@@ -42,13 +40,10 @@ function parse(input, currentDataStructure) {
     }
 
     else if (endingList(input, currentDataStructure)){
-        console.log('INSIDE endingList');
         return packageResults(LIST_END, input.slice(1));
     }
 
     else if (endingDictionary(input, currentDataStructure)){
-        console.log('INSIDE endingDictionary');
-        console.log(input);
         return packageResults(DICTIONARY_END, input.slice(1));
     }
 }
@@ -125,9 +120,6 @@ function parseByteString(input){
 
     return packageResults(byteStringContents, input.slice(i));
 }
-
-// var parsed = parse('di123el4:spami42eee');
-// console.log("CALLING PARSE ", parsed);
 
 module.exports = {
     parse: parse,
