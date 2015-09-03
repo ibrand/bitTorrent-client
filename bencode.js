@@ -5,7 +5,7 @@ var LIST_END = 'LIST_END';
 function parse(input, currentDataStructure) {
     debugger
 
-    if (!input){
+    if (input.length === 0){
         return currentDataStructure;
     }
 
