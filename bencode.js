@@ -3,20 +3,23 @@ var DICTIONARY_END = 'DICTIONARY_END';
 var LIST_END = 'LIST_END';
 
 function parse(input, currentDataStructure) {
-    
+    debugger
+
     if (!input){
         return currentDataStructure;
     }
 
     else if (startingNewDictionary(input)){
         currentDataStructure = {};
-        var results = parse(input.substring(1, input.length), currentDataStructure); // remove the 'd' character
+        var results = parse(input.slice(1), currentDataStructure); // remove the 'd' character
         while(results.result !== 'DICTIONARY_END'){
-            var key = results.result;
-            // turn the byte array into a string
-            // FUNCTION
+            // all keys must be Strings
+            // so convert the byte array into a string
+            var key = byteBufferToString(results.result);
+            console.log('KEY',key);
             results = parse(results.remainingInput, currentDataStructure);
-            var value = results.result; // IF KEY IS PIECES leave as byte array
+            var value = byteBufferToString(results.result);
+            // var value = results.result; // IF KEY IS PIECES leave as byte array
             // otherwise make a string out of that array
             currentDataStructure[key] = value;
             results = parse(results.remainingInput, currentDataStructure);
@@ -25,7 +28,7 @@ function parse(input, currentDataStructure) {
     }
     else if (startingNewList(input)){
         currentDataStructure = [];
-        var results = parse(input.substring(1, input.length), currentDataStructure); // remove the 'l' character
+        var results = parse(input.slice(1), currentDataStructure); // remove the 'l' character
         while(results.result !== 'LIST_END'){
             currentDataStructure.push(results.result);
             var results = parse(results.remainingInput, currentDataStructure);
@@ -42,13 +45,13 @@ function parse(input, currentDataStructure) {
 
     else if (endingList(input, currentDataStructure)){
         console.log('INSIDE endingList');
-        return packageResults(LIST_END, input.substring(1, input.length));
+        return packageResults(LIST_END, input.slice(1));
     }
 
     else if (endingDictionary(input, currentDataStructure)){
         console.log('INSIDE endingDictionary');
         console.log(input);
-        return packageResults(DICTIONARY_END, input.substring(1, input.length));
+        return packageResults(DICTIONARY_END, input.slice(1));
     }
 }
 
@@ -82,6 +85,10 @@ function isNumber(character){
     return !isNaN(character);
 }
 
+function byteBufferToString(byteBuffer){
+    return byteBuffer.toString();
+}
+
 function packageResults(result, remainingInput){
     return {result: result, remainingInput: remainingInput};
 }
@@ -90,34 +97,35 @@ function parseInteger(input){
     // skip the 'i' at the beginning of the string
     var i = 1;
     var compiledString = '';
-    while(input.charAt(i) != 'e'){
-        compiledString += input.charAt(i);
+    while(String.fromCharCode(input[i]) !== 'e'){
+        compiledString += String.fromCharCode(input[i]);
         i++;
     }
-    return packageResults(Number(compiledString), input.substring(i+1, input.length)); // skip the last 'e'
+    return packageResults(Number(compiledString), input.slice(i+1)); // skip the last 'e'
 }
 
 function parseByteString(input){
     var i = 0;
     var lengthOfByteString = '';
-    charToExamine = input.charAt(i);
 
-    while (charToExamine != ':'){
-        lengthOfByteString += charToExamine;
+    // parse the number that determines the length of the byte string
+    digitToExamine = String.fromCharCode(input[i]);
+    while (digitToExamine !== ':'){
+        lengthOfByteString += digitToExamine;
         i++;
-        charToExamine = input.charAt(i);
+        digitToExamine = String.fromCharCode(input[i]);
     }
     // then skip over the ':'
     i++;
-    charToExamine = input.charAt(i);
+    digitToExamine = String.fromCharCode(input[i]);
 
     lengthOfByteString = Number(lengthOfByteString);
 
-    var byteStringContents = input.substring(i, i+lengthOfByteString);
+    var byteStringContents = input.slice(i, i+lengthOfByteString);
     // ensure that we keep track of where we are in input
     i = i+lengthOfByteString;
 
-    return packageResults(byteStringContents, input.substring(i, input.length));
+    return packageResults(byteStringContents, input.slice(i));
 }
 
 // var parsed = parse('di123el4:spami42eee');
