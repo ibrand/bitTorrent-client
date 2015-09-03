@@ -1,21 +1,8 @@
 var bencode = require('./bencode.js');
 
 function testParse(){
-    var fs = require('fs');
-    var decodedFile = {};
-
-    fs.readFile('testFile.torrent', function(err, buffer){
-        if (err) {
-            throw new Error('not a valid file!!!');
-        }
-        // pass the byte array into bencode's parse for decoding
-        var decodedFile = bencode.parse(buffer).result;
-        if (typeof decodedFile !== 'object'){
-            console.log('typeof decodedFile', typeof decodedFile);
-            throw new Error('parse is not returning an object!');
-        }
-        console.log('decodedFile',decodedFile);
-    });
+    var decoded = bencode.parse('testFile.torrent');
+    console.log(decoded);
 }
 
 function testParseInteger() {
