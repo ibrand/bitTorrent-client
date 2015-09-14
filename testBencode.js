@@ -1,4 +1,4 @@
-var bencode = require('./bencode.js');
+var bencode = require('./Bencode.js');
 
 function testParse(){
     var decoded = bencode.parse('testFile.torrent');
