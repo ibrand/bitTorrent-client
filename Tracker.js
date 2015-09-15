@@ -4,8 +4,11 @@ var http = require('http');
 var fs = require('fs');
 
 var file = fs.readFileSync('testFile.torrent');
-var infoString = new Buffer('info','utf8');
-var infoValue = file.slice(file.indexOf(infoString)+infoString.length, file.length-1);
+var theWordInfo = new Buffer('info','utf8');
+
+// infoValue is everything after the word 'info' in the .torrent file
+// it is used as the value for the key 'info_hash' in the request to the tracker
+var infoValue = file.slice(file.indexOf(theWordInfo)+theWordInfo.length, file.length-1);
 
 var decodedFile = bencode.parse('testFile.torrent');
 
@@ -19,7 +22,6 @@ function encodeBufferToURI(s) {
   }
   return retval;
 }
-
 
 function makeHTTPRequest() {
     // hash the info_hash
