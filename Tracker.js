@@ -17,8 +17,8 @@ makeHTTPRequest();
 function encodeBufferToURI(s) {
   var retval = '';
   for (var i = 0; i < s.length; i++) {
-    var x = s[i].toString(16);
-    retval += '%' + (x.length == 1 ? '0' + x : x);
+    var hexEncodedByteChar = s[i].toString(16);
+    retval += '%' + (hexEncodedByteChar.length == 1 ? '0' + hexEncodedByteChar : hexEncodedByteChar);
   }
   return retval;
 }
