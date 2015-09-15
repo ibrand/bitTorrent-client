@@ -1,13 +1,11 @@
 var crypto = require('crypto');
 var bencode = require('./Bencode.js');
-var bencodeExternal = require('./bencoder');
 var http = require('http');
 var fs = require('fs');
-var indexof = require('buffer-indexof');
 
 var file = fs.readFileSync('testFile.torrent');
 var infoString = new Buffer('info','utf8');
-var infoValue = file.slice(indexof(file, infoString)+infoString.length, file.length-1);
+var infoValue = file.slice(file.indexOf(infoString)+infoString.length, file.length-1);
 
 var decodedFile = bencode.parse('testFile.torrent');
 
@@ -24,7 +22,6 @@ function encodeBufferToURI(s) {
 
 
 function makeHTTPRequest() {
-    // var info_hash = bencodeExternal.bencode(decodedFile.info);
     // hash the info_hash
     var sha1 = crypto.createHash('sha1');
     sha1.update(infoValue);
@@ -43,7 +40,6 @@ function makeHTTPRequest() {
         port: 6881,
         left: decodedFile.info.length
     };
-    console.log(params['left']);
 
     for(var key in params){
         url += key+'='+String(params[key])+'&';
