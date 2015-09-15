@@ -3,7 +3,7 @@ var DICTIONARY_END = 'DICTIONARY_END';
 var LIST_END = 'LIST_END';
 
 // parse a bencoded file
-function parse(fileToParse){
+function parseFile(fileToParse){
     var fs = require('fs');
     var decodedFile = {};
 
@@ -11,6 +11,16 @@ function parse(fileToParse){
 
     // pass the byte array into _parse for decoding
     decodedFile = _parse(toDecode).result;
+    decodedFile = makeByteBuffersReadable(decodedFile);
+
+    return decodedFile;
+}
+
+function parseBuffer(bufferToParse){
+    var decodedFile = {};
+
+    // pass the byte array into _parse for decoding
+    decodedFile = _parse(bufferToParse).result;
     decodedFile = makeByteBuffersReadable(decodedFile);
 
     return decodedFile;
@@ -154,7 +164,8 @@ function parseByteString(input){
 }
 
 module.exports = {
-    parse: parse,
+    parseFile: parseFile,
+    parseBuffer: parseBuffer,
     parseByteString: parseByteString,
     parseInteger: parseInteger
 }
