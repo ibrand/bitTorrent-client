@@ -1,6 +1,6 @@
 
-var DICTIONARY_END = 'DICTIONARY_END';
-var LIST_END = 'LIST_END';
+var DICTIONARY_END = {};
+var LIST_END = {};
 
 // parse a bencoded file
 function parseFile(fileToParse){
@@ -52,7 +52,7 @@ function _parse(input, currentDataStructure) {
     else if (startingNewDictionary(input)){
         currentDataStructure = {};
         var results = _parse(input.slice(1), currentDataStructure); // remove the 'd' character
-        while(results.result !== 'DICTIONARY_END'){
+        while(results.result !== DICTIONARY_END){
             // all keys must be Strings
             // so convert the byte array into a string
             var key = byteBufferToString(results.result);
@@ -67,7 +67,7 @@ function _parse(input, currentDataStructure) {
     else if (startingNewList(input)){
         currentDataStructure = [];
         var results = _parse(input.slice(1), currentDataStructure); // remove the 'l' character
-        while(results.result !== 'LIST_END'){
+        while(results.result !== LIST_END){
             currentDataStructure.push(results.result);
             var results = _parse(results.remainingInput, currentDataStructure);
         }
