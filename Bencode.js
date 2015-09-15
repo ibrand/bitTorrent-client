@@ -11,7 +11,6 @@ function parseFile(fileToParse){
 
     // pass the byte array into _parse for decoding
     decodedFile = _parse(toDecode).result;
-    decodedFile = makeByteBuffersReadable(decodedFile);
 
     return decodedFile;
 }
@@ -21,13 +20,12 @@ function parseBuffer(bufferToParse){
 
     // pass the byte array into _parse for decoding
     decodedFile = _parse(bufferToParse).result;
-    decodedFile = makeByteBuffersReadable(decodedFile);
 
     return decodedFile;
 }
 
 // all byte buffers that should be rendered as strings will be
-function makeByteBuffersReadable(parsedObject){
+function _makeByteBuffersReadable(parsedObject){
     Object.keys(parsedObject).forEach(function (key) {
         if (key !== 'info'){
             parsedObject[key] = parsedObject[key].toString();
