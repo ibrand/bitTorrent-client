@@ -8,8 +8,22 @@ var decodedFile = bencode.parseFile('testFile.torrent');
 makeHTTPRequest();
 
 function parseResponse(response){
-    var decodedResponse = bencode.parseTrackerResponse(response);
-    console.log(decodedResponse);
+    var decodedResponse = bencode.parseBuffer(response);
+    var peerBuffer = decodedResponse.peers;
+    if (peerBuffer.length%6 !== 0){
+        throw new Error('Something is wrong with your peers!!');
+    }
+    var peers = {};
+    for(var i = 0; i < peerBuffer.length; i = i+6){
+        var ip = '';
+        for(var j = i; j < i+4; j++){
+            ip += peerBuffer[j] + '.'
+        }
+        ip = ip.substring(0, ip.length-1); // slice off final '.'
+        var port = peerBuffer.readUIntBE(i+4, 2);
+        peers[ip] = port;
+    }
+    console.log(peers);
 }
 
 function makeHTTPRequest() {
@@ -24,8 +38,7 @@ function makeHTTPRequest() {
         // whole response was received
         response.on('end', function (){
             var buffer = Buffer.concat(bufferList);
-            console.log(buffer.toString('hex'));
-            // parseResponse(buffer);
+            parseResponse(buffer);
         });
     }).end();
 }
