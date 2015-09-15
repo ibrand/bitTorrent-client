@@ -3,22 +3,29 @@ var bencode = require('./Bencode.js');
 var http = require('http');
 var fs = require('fs');
 
-var decodedFile = bencode.parse('testFile.torrent');
+var decodedFile = bencode.parseFile('testFile.torrent');
 
 makeHTTPRequest();
 
+function parseResponse(response){
+    var decodedResponse = bencode.parseTrackerResponse(response);
+    console.log(decodedResponse);
+}
+
 function makeHTTPRequest() {
     http.request(getRequestUrl(), function (response){
-        var str = '';
+        var bufferList = [];
 
         // another chunk of data has been received, append to str
         response.on('data', function (chunk){
-            str += chunk;
+            bufferList.push(chunk);
         });
 
         // whole response was received
         response.on('end', function (){
-            console.log('RESP',str);
+            var buffer = Buffer.concat(bufferList);
+            console.log(buffer.toString('hex'));
+            // parseResponse(buffer);
         });
     }).end();
 }
