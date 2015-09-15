@@ -49,5 +49,17 @@ function makeHTTPRequest() {
     // chop off the final amperstand
     url = url.slice(0,url.length-1);
 
-    console.log(url);
+    http.request(url, function (response){
+        var str = '';
+
+        // another chunk of data has been received, append to str
+        response.on('data', function (chunk){
+            str += chunk;
+        });
+
+        // whole response was received
+        response.on('end', function (){
+            console.log('RESP',str);
+        });
+    }).end();
 }
