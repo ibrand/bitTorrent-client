@@ -9,7 +9,7 @@ Tracker.makeRequestToTracker(function (peerObject){
     // open up a socket with the first peer in the obj
     var client = net.connect(port, hostIp, function(){
         console.log('connected to server');
-        client.write("world!");
+        handshake(client);
     });
     client.on('data', function(data){
         console.log(data.toString());
@@ -20,3 +20,11 @@ Tracker.makeRequestToTracker(function (peerObject){
     });
     // perform a handshake with that peer
 });
+
+function handshake(client){
+    client.write(new Buffer([19]));
+    client.write('BitTorrent protocol','utf8');
+    client.write(new Buffer(8).fill(0));
+    client.write(Tracker.getRequestParams().info_hash);
+    client.write(Tracker.getRequestParams().peer_id,'utf8');
+}
