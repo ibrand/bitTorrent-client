@@ -41,11 +41,8 @@ function makeHTTPRequest(getPeerObjectOut) {
     }).end();
 }
 
-function getRequestUrl(){
-    var url = decodedFile.announce+'?';
-    // request needs to me in this order:
-    // uploaded, compact, info_hash, event, downloaded, peer_id, port, left
-    var params = {
+function getRequestParams(){
+    return {
         uploaded: 0, // amount uploaded since the client sent the started event
         compact: 1, // 1 indicates that the client accepts a compact response
         info_hash: createInfoHash(),
@@ -55,6 +52,14 @@ function getRequestUrl(){
         port: 6881,
         left: decodedFile.info.length
     };
+}
+
+function getRequestUrl(){
+    var url = decodedFile.announce+'?';
+    // request needs to me in this order:
+    // uploaded, compact, info_hash, event, downloaded, peer_id, port, left
+    var params = getRequestParams();
+    params.info_hash = encodeBufferToURI(params.info_hash);
 
     for(var key in params){
         url += key+'='+String(params[key])+'&';
@@ -76,7 +81,7 @@ function createInfoHash(){
     // hash the info_hash
     var sha1 = crypto.createHash('sha1');
     sha1.update(infoValue);
-    return encodeBufferToURI(sha1.digest());
+    return sha1.digest();
 }
 
 function encodeBufferToURI(s) {
@@ -89,5 +94,6 @@ function encodeBufferToURI(s) {
 }
 
 module.exports = {
-    makeRequestToTracker: makeHTTPRequest
+    makeRequestToTracker: makeHTTPRequest,
+    getRequestParams: getRequestParams
 }
