@@ -1,5 +1,6 @@
 var Tracker = require('./Tracker');
 var net = require('net');
+var async = require('async');
 
 Tracker.makeRequestToTracker(function (peerObject){
     // peer object contains IP addresses as keys and ports as values
@@ -12,13 +13,17 @@ Tracker.makeRequestToTracker(function (peerObject){
         handshake(client);
     });
 
-    processHandshake(client);
+    processHandshake(client, function(){
+        // We have finished processing the handshake
+        // 4 how many bytes are in the length header 
+        readChunk(client, 4, function(error, buffer){
+            var lengthHeader = buffer.readUIntBE(0,buffer.length);
+            readChunk(client, lengthHeader, function(error, buffer){
+                console.log('rest of message', buffer);
+            });
+        });
+    });
 
-    // client.on('data', function(data){
-    //     console.log('LENGTH in bytes', data.length);
-    //     console.log(data.toString(),'\n');
-    //     client.end();
-    // });
     client.on('end', function(){
         console.log('disconnected from server');
     });
@@ -28,7 +33,7 @@ Tracker.makeRequestToTracker(function (peerObject){
 function readChunk(client, lengthToRead, acquireBuffer){
     var buffer = client.read(lengthToRead);
     if (buffer){
-        return acquireBuffer(buffer);
+        return acquireBuffer(null, buffer);
     }
     client.once('readable', function(){
         readChunk(client, lengthToRead, acquireBuffer);
@@ -43,23 +48,26 @@ function handshake(client){
     client.write(Tracker.getRequestParams().peer_id,'utf8');
 }
 
-function processHandshake(client){
-    console.log('IN PROCESS HANDSHAKE');
-    readChunk(client, 1, function(buffer){
-        console.log('Inside first read chunk');
-        console.log('single byte',buffer.toString());
-        readChunk(client, 19, function(buffer){
+function processHandshake(client, finishedHandshake){
+    async.waterfall([
+        function(callback) {
+            readChunk(client, 1, callback);
+        }, function(buffer, callback) {
+            console.log('single byte',buffer.toString());
+            readChunk(client, 19, callback);
+        }, function(buffer, callback) {
             console.log('protocol',buffer.toString());
-            readChunk(client, 8, function(buffer){
-                console.log('reserve bytes',buffer.toString());
-                readChunk(client, 20, function(buffer){
-                    console.log('sha1',buffer.toString());
-                    readChunk(client, 20, function(buffer){
-                        console.log('peer_id',buffer.toString());
-                        client.end();
-                    });
-                });
-             });
-        });
-    });
+            readChunk(client, 8, callback);
+        }, function(buffer, callback) {
+            console.log('reserve bytes',buffer.toString());
+            readChunk(client, 20, callback);
+        }, function(buffer, callback) {
+            console.log('sha1',buffer.toString());
+            readChunk(client, 20, callback);
+        }, function(buffer, callback) {
+            console.log('peer_id',buffer.toString());
+            callback();
+        },
+    ], finishedHandshake);
 }
+
