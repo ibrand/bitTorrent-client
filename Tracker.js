@@ -24,7 +24,7 @@ function parseResponse(response){
     return peers;
 }
 
-function makeHTTPRequest(getBufferOut) {
+function makeHTTPRequest(getPeerObjectOut) {
     http.request(getRequestUrl(), function (response){
         var bufferList = [];
 
@@ -36,7 +36,7 @@ function makeHTTPRequest(getBufferOut) {
         // whole response was received
         response.on('end', function (){
             var buffer = Buffer.concat(bufferList);
-            getBufferOut(parseResponse(buffer));
+            getPeerObjectOut(parseResponse(buffer));
         });
     }).end();
 }
