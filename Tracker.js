@@ -5,8 +5,6 @@ var fs = require('fs');
 
 var decodedFile = bencode.parseFile('testFile.torrent');
 
-makeHTTPRequest();
-
 function parseResponse(response){
     var decodedResponse = bencode.parseBuffer(response);
     var peerBuffer = decodedResponse.peers;
@@ -23,10 +21,10 @@ function parseResponse(response){
         var port = peerBuffer.readUIntBE(i+4, 2);
         peers[ip] = port;
     }
-    console.log(peers);
+    return peers;
 }
 
-function makeHTTPRequest() {
+function makeHTTPRequest(getBufferOut) {
     http.request(getRequestUrl(), function (response){
         var bufferList = [];
 
@@ -38,7 +36,7 @@ function makeHTTPRequest() {
         // whole response was received
         response.on('end', function (){
             var buffer = Buffer.concat(bufferList);
-            parseResponse(buffer);
+            getBufferOut(parseResponse(buffer));
         });
     }).end();
 }
@@ -88,4 +86,8 @@ function encodeBufferToURI(s) {
     retval += '%' + (hexEncodedByteChar.length == 1 ? '0' + hexEncodedByteChar : hexEncodedByteChar);
   }
   return retval;
+}
+
+module.exports = {
+    makeRequestToTracker: makeHTTPRequest
 }
