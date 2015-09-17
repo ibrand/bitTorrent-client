@@ -10,9 +10,11 @@ Tracker.makeRequestToTracker(function (peerObject){
     // open up a socket with the first peer in the obj
     var client = net.connect(port, hostIp, function(){
         console.log('connected to server');
+        // perform a handshake with that peer
         handshake(client);
     });
 
+    // receive peer's handshake response
     processHandshake(client, function(){
         // We have finished processing the handshake
         // 4 how many bytes are in the length header 
@@ -27,7 +29,6 @@ Tracker.makeRequestToTracker(function (peerObject){
     client.on('end', function(){
         console.log('disconnected from server');
     });
-    // perform a handshake with that peer
 });
 
 function readChunk(client, lengthToRead, acquireBuffer){
