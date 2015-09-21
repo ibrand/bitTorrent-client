@@ -2,6 +2,8 @@ var Tracker = require('./Tracker');
 var net = require('net');
 var async = require('async');
 
+var whoHasWhichPiece = [];
+
 Tracker.makeRequestToTracker(function (peerListObject){
     // peer object contains IP addresses as keys and ports as values
     var hostIp = '96.126.104.219'; // Tom's IP will stay constant because he is running the test tracker
@@ -169,6 +171,27 @@ function have(peerObject, client, lengthHeader){
 
 function bitfield(peerObject, client, lengthHeader){
     console.log('in bitfield',peerObject);
+    // The bitfield message is variable length, where X is the length of the bitfield.
+    // The bitfield is a a bunch of bit flags set to 1 if the peer has the piece and 0 if they don't
+    readChunk(client, lengthHeader, function(error, bitfield){
+        if(bitfield.length !== lengthHeader){
+            // TODO: throw an error here
+            client.end();
+        } else {
+            var bitFlagString = '';
+            // build a string of each bitflag
+            for(var i = 0; i < lengthHeader; i++){
+                bitFlagString += bitfield[i].toString(2);
+            }
+            // change state based off the bitflags
+            for(var i = 0; i < bitFlagString.length; i++){
+                var flag = bitFlagString[i];
+                if (flag === '1'){
+                    whoHasWhichPiece[i] = peerObject.hostIp;
+                }
+            }
+        }
+    });
 }
 
 function request(peerObject, client, lengthHeader){
