@@ -30,13 +30,10 @@ Tracker.makeRequestToTracker(function (peerListObject){
 
     // receive peer's handshake response
     processHandshake(client, function(){
-        // We have finished processing the handshake
-        // 4 how many bytes are in the length header 
-        readChunk(client, 4, function(error, buffer){
-            console.log('the length flag', buffer);
-            var lengthHeader = buffer.readUIntBE(0,buffer.length);
-            processMessage(peerObject, client, lengthHeader);
-        });
+    
+    // We have finished processing the handshake        
+    processMessage(peerObject, client);
+
     });
 
     client.on('end', function(){
@@ -85,63 +82,70 @@ function processHandshake(client, finishedHandshake){
     ], finishedHandshake);
 }
 
-function processMessage(peerObject, client, lengthHeader){
+function processMessage(peerObject, client){
     // messages will be formatted as: <lengthHeader><id><payload>
     // lengthHeader tells how long the message will be
     // id tells what type of message you're dealing with
     // payload is the rest of the body of the message
 
-    if (lengthHeader === 0){
-        // then the msg is keepalive so keep connection open
-        // no id
-        // no payload
-        console.log('in keepalive');
-    }
-    // read one more bit to determine the id of the message
-    readChunk(client, 1, function(error, buffer){
-        var id = buffer.readUIntBE(0,buffer.length);
-        console.log('read chunk');
-        if (id === 0){
-            // choke
-            choke(peerObject, client, lengthHeader);
+    // first process the length header
+    readChunk(client, 4, function(error, buffer){
+        console.log('the length flag', buffer);
+        var lengthHeader = buffer.readUIntBE(0,buffer.length);
+
+        if (lengthHeader === 0){
+            // then the msg is keepalive so keep connection open
+            // no id
+            // no payload
+            console.log('in keepalive');
         }
-        if (id === 1){
-            // unchoke
-            unchoke(peerObject, client, lengthHeader);
-        }
-        if (id === 2){
-            // interested
-            interested(peerObject, client, lengthHeader);
-        }
-        if (id === 3){
-            // uninterested
-            uninterested(peerObject, client, lengthHeader);
-        }
-        if (id === 4){
-            // have
-            have(peerObject, client, lengthHeader);
-        }
-        if (id === 5){
-            // bitfield
-            bitfield(peerObject, client, lengthHeader);
-        }
-        if (id === 6){
-            // request
-            request(peerObject, client, lengthHeader);
-        }
-        if (id === 7){
-            // piece
-            piece(peerObject, client, lengthHeader);
-        }
-        if (id === 8){
-            // cancel
-            cancel(peerObject, client, lengthHeader);
-        }
-        if (id === 9){
-            // port
-            port(peerObject, client, lengthHeader);
-        }
-        console.log('id',id);
+
+        // then read one more bit to determine the id of the message
+        readChunk(client, 1, function(error, buffer){
+            var id = buffer.readUIntBE(0,buffer.length);
+            console.log('read chunk');
+            if (id === 0){
+                // choke
+                choke(peerObject, client, lengthHeader);
+            }
+            if (id === 1){
+                // unchoke
+                unchoke(peerObject, client, lengthHeader);
+            }
+            if (id === 2){
+                // interested
+                interested(peerObject, client, lengthHeader);
+            }
+            if (id === 3){
+                // uninterested
+                uninterested(peerObject, client, lengthHeader);
+            }
+            if (id === 4){
+                // have
+                have(peerObject, client, lengthHeader);
+            }
+            if (id === 5){
+                // bitfield
+                bitfield(peerObject, client, lengthHeader);
+            }
+            if (id === 6){
+                // request
+                request(peerObject, client, lengthHeader);
+            }
+            if (id === 7){
+                // piece
+                piece(peerObject, client, lengthHeader);
+            }
+            if (id === 8){
+                // cancel
+                cancel(peerObject, client, lengthHeader);
+            }
+            if (id === 9){
+                // port
+                port(peerObject, client, lengthHeader);
+            }
+            console.log('id',id);
+        });
     });
 }
 
