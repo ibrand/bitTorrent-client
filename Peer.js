@@ -30,10 +30,11 @@ Tracker.makeRequestToTracker(function (peerListObject){
 
     // receive peer's handshake response
     processHandshake(client, function(){
-    
-    // We have finished processing the handshake        
-    processMessage(peerState, client); // bitfield
-    expressInterest(peerState, client); // interested
+        // We have finished processing the handshake        
+        processMessage(peerState, client, function(){
+            expressInterest(peerState, client); // interested
+
+        }); // bitfield
 
     });
 
@@ -83,7 +84,7 @@ function processHandshake(client, finishedHandshake){
     ], finishedHandshake);
 }
 
-function processMessage(peerState, client){
+function processMessage(peerState, client, finishedMessage){
     // messages will be formatted as: <lengthHeader><id><payload>
     // lengthHeader tells how long the message will be
     // id tells what type of message you're dealing with
@@ -106,10 +107,10 @@ function processMessage(peerState, client){
             var id = buffer.readUIntBE(0,buffer.length);
             console.log('read chunk');
             if (id < 4){
-                updateState(peerState, 'peerSent', id);
+                finishedMessage(updateState(peerState, 'peerSent', id));
             }
             if (id === 4 || id === 5){
-                updateWhoHasWhatTable(id, peerState, client, lengthHeader);
+                finishedMessage(updateWhoHasWhatTable(id, peerState, client, lengthHeader));
             }
             if (id === 6){
                 // request
