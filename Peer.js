@@ -32,7 +32,8 @@ Tracker.makeRequestToTracker(function (peerListObject){
     processHandshake(client, function(){
     
     // We have finished processing the handshake        
-    processMessage(peerState, client);
+    processMessage(peerState, client); // bitfield
+    expressInterest(peerState, client); // interested
 
     });
 
@@ -130,8 +131,16 @@ function processMessage(peerState, client){
     });
 }
 
+function expressInterest(peerState, client){
+    // interested looks like this: 00012
+    updateState(peerState, 'meSent', 2);
+    var b = new Buffer([0, 0, 0, 1, 2]);
+    console.log('b',b);
+    client.write(b);
+}
+
 function updateState(peerState, whoSentMessage, id){
-    if (whoSentMessage = 'peerSent'){
+    if (whoSentMessage === 'peerSent'){
         if (id === 0){
             console.log('choke');
             peerState.peer_choking = 1;
@@ -145,9 +154,22 @@ function updateState(peerState, whoSentMessage, id){
             console.log('uninterested');
             peerState.peer_interested = 0;
         }
-    } else {
-        // I sent the message
-        // TODO: this.
+    } else if (whoSentMessage === 'meSent'){
+        if (whoSentMessage = 'meSent'){
+            if (id === 0){
+                console.log('choke');
+                peerState.am_choking = 1;
+            } else if (id === 1){
+                console.log('unchoke');
+                peerState.am_choking = 0;
+            } else if (id === 2){
+                console.log('interested');
+                peerState.am_interested = 1;
+            } else if (id === 3){
+                console.log('uninterested');
+                peerState.am_interested = 0;
+            }
+        }
     }
     console.log('updatedState',peerState);
 }
