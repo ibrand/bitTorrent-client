@@ -10,7 +10,7 @@ Tracker.makeRequestToTracker(function (peerListObject){
     var port = peerListObject[hostIp];
 
     // initialize the states of the peer
-    var peerObject = {
+    var peerState = {
         hostIp: hostIp,
         port: port,
         am_choking: 1,
@@ -19,7 +19,7 @@ Tracker.makeRequestToTracker(function (peerListObject){
         peer_interested: 0
     };
 
-    console.log('peerObject', peerObject);
+    console.log('peerState', peerState);
 
     // open up a socket with the first peer in the obj
     var client = net.connect(port, hostIp, function(){
@@ -32,7 +32,7 @@ Tracker.makeRequestToTracker(function (peerListObject){
     processHandshake(client, function(){
     
     // We have finished processing the handshake        
-    processMessage(peerObject, client);
+    processMessage(peerState, client);
 
     });
 
@@ -82,7 +82,7 @@ function processHandshake(client, finishedHandshake){
     ], finishedHandshake);
 }
 
-function processMessage(peerObject, client){
+function processMessage(peerState, client){
     // messages will be formatted as: <lengthHeader><id><payload>
     // lengthHeader tells how long the message will be
     // id tells what type of message you're dealing with
@@ -104,77 +104,63 @@ function processMessage(peerObject, client){
         readChunk(client, 1, function(error, buffer){
             var id = buffer.readUIntBE(0,buffer.length);
             console.log('read chunk');
-            if (id === 0){
-                // choke
-                choke(peerObject, client, lengthHeader);
+            if (id < 4){
+                updateState(peerState, 'peerSent', id);
             }
-            if (id === 1){
-                // unchoke
-                unchoke(peerObject, client, lengthHeader);
-            }
-            if (id === 2){
-                // interested
-                interested(peerObject, client, lengthHeader);
-            }
-            if (id === 3){
-                // uninterested
-                uninterested(peerObject, client, lengthHeader);
-            }
-            if (id === 4){
-                // have
-                have(peerObject, client, lengthHeader);
-            }
-            if (id === 5){
-                // bitfield
-                bitfield(peerObject, client, lengthHeader);
+            if (id === 4 || id === 5){
+                updateWhoHasWhatTable(id, peerState, client, lengthHeader);
             }
             if (id === 6){
                 // request
-                request(peerObject, client, lengthHeader);
+                request(peerState, client, lengthHeader);
             }
             if (id === 7){
                 // piece
-                piece(peerObject, client, lengthHeader);
+                piece(peerState, client, lengthHeader);
             }
             if (id === 8){
                 // cancel
-                cancel(peerObject, client, lengthHeader);
+                cancel(peerState, client, lengthHeader);
             }
             if (id === 9){
                 // port
-                port(peerObject, client, lengthHeader);
+                port(peerState, client, lengthHeader);
             }
-            console.log('id',id);
         });
     });
 }
 
-function choke(peerObject, client, lengthHeader){
-    peerObject.peer_choking = 1;
-    console.log('in choke',peerObject);
+function updateState(peerState, whoSentMessage, id){
+    if (whoSentMessage = 'peerSent'){
+        if (id === 0){
+            console.log('choke');
+            peerState.peer_choking = 1;
+        } else if (id === 1){
+            console.log('unchoke');
+            peerState.peer_choking = 0;
+        } else if (id === 2){
+            console.log('interested');
+            peerState.peer_interested = 1;
+        } else if (id === 3){
+            console.log('uninterested');
+            peerState.peer_interested = 0;
+        }   
+    }
+    console.log('updatedState',peerState);
 }
 
-function unchoke(peerObject, client, lengthHeader){
-    peerObject.peer_choking = 0;
-    console.log('in unchoke',peerObject);
+function updateWhoHasWhatTable(id, peerState, client, lengthHeader){
+    if (id === 5){
+        parseBitfield(peerState, client, lengthHeader);
+    }
 }
 
-function interested(peerObject, client, lengthHeader){
-    peerObject.peer_interested = 1;
-    console.log('in interested',peerObject);
+function have(peerState, client, lengthHeader){
+    console.log('in have',peerState);
 }
 
-function uninterested(peerObject, client, lengthHeader){
-    peerObject.peer_interested = 0;
-    console.log('in uninterested',peerObject);
-}
-
-function have(peerObject, client, lengthHeader){
-    console.log('in have',peerObject);
-}
-
-function bitfield(peerObject, client, lengthHeader){
-    console.log('in bitfield',peerObject);
+function parseBitfield(peerState, client, lengthHeader){
+    console.log('in parseBitfield',peerState);
     // The bitfield message is variable length, where X is the length of the bitfield.
     // The bitfield is a a bunch of bit flags set to 1 if the peer has the piece and 0 if they don't
     readChunk(client, lengthHeader, function(error, bitfield){
@@ -191,25 +177,25 @@ function bitfield(peerObject, client, lengthHeader){
             for(var i = 0; i < bitFlagString.length; i++){
                 var flag = bitFlagString[i];
                 if (flag === '1'){
-                    whoHasWhichPiece[i] = peerObject.hostIp;
+                    whoHasWhichPiece[i] = peerState.hostIp;
                 }
             }
         }
     });
 }
 
-function request(peerObject, client, lengthHeader){
-    console.log('in request',peerObject);
+function request(peerState, client, lengthHeader){
+    console.log('in request',peerState);
 }
 
-function piece(peerObject, client, lengthHeader){
-    console.log('in piece',peerObject);
+function piece(peerState, client, lengthHeader){
+    console.log('in piece',peerState);
 }
 
-function cancel(peerObject, client, lengthHeader){
-    console.log('in cancel',peerObject);
+function cancel(peerState, client, lengthHeader){
+    console.log('in cancel',peerState);
 }
 
-function port(peerObject, client, lengthHeader){
-    console.log('in port',peerObject);
+function port(peerState, client, lengthHeader){
+    console.log('in port',peerState);
 }
