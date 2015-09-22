@@ -31,11 +31,13 @@ Tracker.makeRequestToTracker(function (peerListObject){
     // receive peer's handshake response
     processHandshake(client, function(){
         // We have finished processing the handshake        
-        processMessage(peerState, client, function(){
-            expressInterest(peerState, client); // interested
+        processMessage(peerState, client, function(){ // bitfield
+            expressInterest(peerState, client, function(){
+                processMessage(peerState, client, function(){ // unchoke
 
-        }); // bitfield
-
+                });
+            }); // interested
+        });
     });
 
     client.on('end', function(){
@@ -86,19 +88,14 @@ function processHandshake(client, finishedHandshake){
 
 function processMessage(peerState, client, finishedMessage){
     // messages will be formatted as: <lengthHeader><id><payload>
-    // lengthHeader tells how long the message will be
-    // id tells what type of message you're dealing with
-    // payload is the rest of the body of the message
 
     // first process the length header
     readChunk(client, 4, function(error, buffer){
-        console.log('the length flag', buffer);
         var lengthHeader = buffer.readUIntBE(0,buffer.length);
+        console.log('lengthHeader',lengthHeader);
 
         if (lengthHeader === 0){
             // then the msg is keepalive so keep connection open
-            // no id
-            // no payload
             console.log('in keepalive');
         }
 
@@ -106,68 +103,54 @@ function processMessage(peerState, client, finishedMessage){
         readChunk(client, 1, function(error, buffer){
             var id = buffer.readUIntBE(0,buffer.length);
             console.log('read chunk');
-            if (id < 4){
+            if (id < 4 && lengthHeader === 1){
+                console.log('ID', id);
                 finishedMessage(updateState(peerState, 'peerSent', id));
             }
             if (id === 4 || id === 5){
                 finishedMessage(updateWhoHasWhatTable(id, peerState, client, lengthHeader));
             }
-            if (id === 6){
-                // request
-                request(peerState, client, lengthHeader);
-            }
-            if (id === 7){
-                // piece
-                piece(peerState, client, lengthHeader);
-            }
-            if (id === 8){
-                // cancel
-                cancel(peerState, client, lengthHeader);
-            }
-            if (id === 9){
-                // port
-                port(peerState, client, lengthHeader);
-            }
         });
     });
 }
 
-function expressInterest(peerState, client){
+function expressInterest(peerState, client, finishedWrite){
     // interested looks like this: 00012
     updateState(peerState, 'meSent', 2);
     var b = new Buffer([0, 0, 0, 1, 2]);
-    console.log('b',b);
-    client.write(b);
+    client.write(b, function(){
+        finishedWrite();
+    });
 }
 
 function updateState(peerState, whoSentMessage, id){
     if (whoSentMessage === 'peerSent'){
         if (id === 0){
-            console.log('choke');
+            console.log('THEY choke');
             peerState.peer_choking = 1;
         } else if (id === 1){
-            console.log('unchoke');
+            console.log('THEY unchoked');
             peerState.peer_choking = 0;
         } else if (id === 2){
-            console.log('interested');
+            console.log('THEY are interested');
             peerState.peer_interested = 1;
         } else if (id === 3){
-            console.log('uninterested');
+            console.log('THEY are uninterested');
             peerState.peer_interested = 0;
         }
     } else if (whoSentMessage === 'meSent'){
         if (whoSentMessage = 'meSent'){
             if (id === 0){
-                console.log('choke');
+                console.log('I SENT choke');
                 peerState.am_choking = 1;
             } else if (id === 1){
-                console.log('unchoke');
+                console.log('I SENT unchoke');
                 peerState.am_choking = 0;
             } else if (id === 2){
-                console.log('interested');
+                console.log('I SENT interested');
                 peerState.am_interested = 1;
             } else if (id === 3){
-                console.log('uninterested');
+                console.log('I SENT uninterested');
                 peerState.am_interested = 0;
             }
         }
@@ -179,10 +162,6 @@ function updateWhoHasWhatTable(id, peerState, client, lengthHeader){
     if (id === 5){
         parseBitfield(peerState, client, lengthHeader);
     }
-}
-
-function have(peerState, client, lengthHeader){
-    console.log('in have',peerState);
 }
 
 function parseBitfield(peerState, client, lengthHeader){
@@ -208,20 +187,4 @@ function parseBitfield(peerState, client, lengthHeader){
             }
         }
     });
-}
-
-function request(peerState, client, lengthHeader){
-    console.log('in request',peerState);
-}
-
-function piece(peerState, client, lengthHeader){
-    console.log('in piece',peerState);
-}
-
-function cancel(peerState, client, lengthHeader){
-    console.log('in cancel',peerState);
-}
-
-function port(peerState, client, lengthHeader){
-    console.log('in port',peerState);
 }
