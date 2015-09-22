@@ -33,9 +33,9 @@ Tracker.makeRequestToTracker(function (peerListObject){
         // We have finished processing the handshake        
         processMessage(peerState, client, function(){ // bitfield
             expressInterest(peerState, client, function(){
-                processMessage(peerState, client, function(){ // unchoke
-
-                });
+                // processMessage(peerState, client, function(){ // unchoke
+                    console.log('DONE')
+                // });
             }); // interested
         });
     });
@@ -94,9 +94,14 @@ function processMessage(peerState, client, finishedMessage){
         var lengthHeader = buffer.readUIntBE(0,buffer.length);
         console.log('lengthHeader',lengthHeader);
 
+        if (lengthHeader === null){
+            finishedMessage();
+            throw new Error('No length header!');
+        }
         if (lengthHeader === 0){
             // then the msg is keepalive so keep connection open
             console.log('in keepalive');
+            finishedMessage();
         }
 
         // then read one more bit to determine the id of the message
@@ -105,13 +110,17 @@ function processMessage(peerState, client, finishedMessage){
             console.log('read chunk');
             if (id < 4 && lengthHeader === 1){
                 console.log('ID', id);
-                finishedMessage(updateState(peerState, 'peerSent', id));
+                updateState(peerState, 'peerSent', id);
+                processMessage(peerState, client, finishedMessage);
             }
             if (id === 4 || id === 5){
-                finishedMessage(updateWhoHasWhatTable(id, peerState, client, lengthHeader));
+                updateWhoHasWhatTable(id, peerState, client, lengthHeader);
+                processMessage(peerState, client, finishedMessage);
             }
+
         });
     });
+    finishedMessage();
 }
 
 function expressInterest(peerState, client, finishedWrite){
