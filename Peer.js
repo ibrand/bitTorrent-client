@@ -144,7 +144,10 @@ function updateState(peerState, whoSentMessage, id){
         } else if (id === 3){
             console.log('uninterested');
             peerState.peer_interested = 0;
-        }   
+        }
+    } else {
+        // I sent the message
+        // TODO: this.
     }
     console.log('updatedState',peerState);
 }
