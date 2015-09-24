@@ -38,7 +38,6 @@ Tracker.makeRequestToTracker(function (peerListObject){
             var remainingBuffer = processBuffer(waitingBuffer, peerState);
             while (remainingBuffer.length !== 0){
                 remainingBuffer = processBuffer(remainingBuffer, peerState);
-                console.log('remainingBuffer',remainingBuffer);
                 console.log('remainingBuffer.length',remainingBuffer.length);
             }
         });
@@ -52,10 +51,8 @@ Tracker.makeRequestToTracker(function (peerListObject){
 function processBuffer(buffer, peerState){
     // Check to see if the buffer has a complete message
     // messages will be formatted as: <lengthHeader><id><payload>
-
     var lengthHeaderSize = 4;
     var messageLength = buffer.readUIntBE(0,lengthHeaderSize);
-    console.log('messageLength',messageLength);
 
     // Then read that number of bytes and see if they're in the buffer
     for (var i = lengthHeaderSize; i < messageLength+lengthHeaderSize; i++){
@@ -65,15 +62,12 @@ function processBuffer(buffer, peerState){
     }
     // if we haven't escaped, grab the message out of the buffer
     var messageToProcess = new Buffer(messageLength);
-    console.log('messageToProcess',messageToProcess);
     buffer.copy(messageToProcess, 0, lengthHeaderSize, messageLength+lengthHeaderSize);
 
     // process it
     processMessage(messageToProcess, peerState);
     // then return the rest of the buffer
-    buffer = buffer.slice(messageLength+lengthHeaderSize, buffer.length);
-    console.log('buffer',buffer);
-    return buffer;
+    return buffer.slice(messageLength+lengthHeaderSize, buffer.length);
 }
 
 function readChunk(client, lengthToRead, acquireBuffer){
@@ -196,14 +190,14 @@ function updateWhoHasWhatTable(id, messageToProcess, peerState){
 }
 
 function parseHave(messageToProcess, peerState){
-    console.log('in parseHave',peerState);
+    console.log('in parseHave');
     var pieceIndex = messageToProcess.readUIntBE(0,messageToProcess.length);
     whoHasWhichPiece[pieceIndex] = peerState.hostIp;
     console.log('pieceIndex', pieceIndex);
 }
 
 function parseBitfield(id, messageToProcess, peerState){
-    console.log('in parseBitfield',peerState);
+    console.log('in parseBitfield');
     // The bitfield message is variable length, where X is the length of the bitfield.
     // The bitfield is a a bunch of bit flags set to 1 if the peer has the piece and 0 if they don't
     var bitFlagString = '';
