@@ -178,9 +178,19 @@ function updateState(peerState, whoSentMessage, id){
 }
 
 function updateWhoHasWhatTable(id, messageToProcess, peerState){
+    if (id === 4){
+        parseHave(messageToProcess, peerState);
+    }
     if (id === 5){
         parseBitfield(id, messageToProcess, peerState);
     }
+}
+
+function parseHave(messageToProcess, peerState){
+    console.log('in parseHave',peerState);
+    var pieceIndex = messageToProcess.readUIntBE(0,messageToProcess.length);
+    whoHasWhichPiece[pieceIndex] = peerState.hostIp;
+    console.log('pieceIndex', pieceIndex);
 }
 
 function parseBitfield(id, messageToProcess, peerState){
