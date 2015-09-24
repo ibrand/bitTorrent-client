@@ -38,9 +38,10 @@ Tracker.makeRequestToTracker(function (peerListObject){
             var remainingBuffer = processBuffer(waitingBuffer, peerState);
             while (remainingBuffer.length !== 0){
                 remainingBuffer = processBuffer(remainingBuffer, peerState);
-                console.log('remainingBuffer.length',remainingBuffer.length);
             }
         });
+
+        expressInterest(peerState, client, function(){});
     });
 
     client.on('end', function(){
@@ -193,7 +194,6 @@ function parseHave(messageToProcess, peerState){
     console.log('in parseHave');
     var pieceIndex = messageToProcess.readUIntBE(0,messageToProcess.length);
     whoHasWhichPiece[pieceIndex] = peerState.hostIp;
-    console.log('pieceIndex', pieceIndex);
 }
 
 function parseBitfield(id, messageToProcess, peerState){
