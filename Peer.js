@@ -48,23 +48,23 @@ function processBuffer(buffer, peerState){
     // Check to see if the buffer has a complete message
     // messages will be formatted as: <lengthHeader><id><payload>
 
-    var lengthHeader = buffer.readUIntBE(0,4); // 4 is the length of the lengthHeader
-    console.log('lengthHeader', lengthHeader);
+    var lengthHeaderSize = 4;
+    var messageLength = buffer.readUIntBE(0,lengthHeaderSize);
 
     // Then read that number of bytes and see if they're in the buffer
-    for (var i = 0; i < lengthHeader; i++){
+    for (var i = lengthHeaderSize; i < messageLength+lengthHeaderSize; i++){
         if (buffer[i] === undefined){
             return; // escape out of the function if the buffer does not have a full msg
         }
     }
     // if we haven't escaped, grab the message out of the buffer
-    var messageToProcess = new Buffer(lengthHeader);
-    buffer.copy(messageToProcess, 0, 0, lengthHeader);
+    var messageToProcess = new Buffer(messageLength);
+    buffer.copy(messageToProcess, 0, lengthHeaderSize, messageLength+lengthHeaderSize);
 
     // process it
     processMessage(messageToProcess, peerState);
     // then clear the buffer
-    buffer = buffer.slice(lengthHeader, buffer.length);
+    buffer = buffer.slice(messageLength, buffer.length);
 }
 
 function readChunk(client, lengthToRead, acquireBuffer){
@@ -108,42 +108,35 @@ function processHandshake(client, finishedHandshake){
     ], finishedHandshake);
 }
 
-function processMessage(buffer, peerState){
-    // messages will be formatted as: <lengthHeader><id><payload>
-
+function processMessage(messageToProcess, peerState){
     // first process the length header
-    readChunk(client, 4, function(error, buffer){
-        var lengthHeader = buffer.readUIntBE(0,buffer.length);
-        console.log('lengthHeader',lengthHeader);
+    var lengthHeader = messageToProcess.length;
+    console.log('LENGTHHEADER INNER',lengthHeader);
+    if (lengthHeader === null){
+        throw new Error('No length header!');
+    }
+    if (lengthHeader === 0){
+        // then the msg is keepalive so keep connection open
+        console.log('in keepalive');
+        return;
+    }
+    for (var i = 0; i < lengthHeader; i++){
 
-        if (lengthHeader === null){
-            finishedMessage();
-            throw new Error('No length header!');
-        }
-        if (lengthHeader === 0){
-            // then the msg is keepalive so keep connection open
-            console.log('in keepalive');
-            finishedMessage();
-        }
+    }
 
-        // then read one more bit to determine the id of the message
-        readChunk(client, 1, function(error, buffer){
-            var id = buffer.readUIntBE(0,buffer.length);
-            console.log('read chunk');
-            if (id < 4 && lengthHeader === 1){
-                console.log('ID', id);
-                updateState(peerState, 'peerSent', id, function(){
-                     processMessage(peerState, client, finishedMessage);
-                });
-            }
-            if (id === 4 || id === 5){
-                updateWhoHasWhatTable(id, peerState, client, lengthHeader);
-                processMessage(peerState, client, finishedMessage);
-            }
-
-        });
-    });
-    finishedMessage();
+    // // then read one more bit to determine the id of the message
+    // var id = buffer.readUIntBE(0,buffer.length);
+    // console.log('read chunk');
+    // if (id < 4 && lengthHeader === 1){
+    //     console.log('ID', id);
+    //     updateState(peerState, 'peerSent', id, function(){
+    //          processMessage(peerState, client, finishedMessage);
+    //     });
+    // }
+    // if (id === 4 || id === 5){
+    //     updateWhoHasWhatTable(id, peerState, client, lengthHeader);
+    //     processMessage(peerState, client, finishedMessage);
+    // }
 }
 
 function expressInterest(peerState, client, finishedWrite){
