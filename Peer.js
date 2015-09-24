@@ -35,7 +35,12 @@ Tracker.makeRequestToTracker(function (peerListObject){
         // We have finished processing the handshake        
         client.on('data', function(data){
             waitingBuffer = Buffer.concat([waitingBuffer, data]);
-            processBuffer(waitingBuffer, peerState);
+            var remainingBuffer = processBuffer(waitingBuffer, peerState);
+            while (remainingBuffer.length !== 0){
+                remainingBuffer = processBuffer(remainingBuffer, peerState);
+                console.log('remainingBuffer',remainingBuffer);
+                console.log('remainingBuffer.length',remainingBuffer.length);
+            }
         });
     });
 
@@ -50,6 +55,7 @@ function processBuffer(buffer, peerState){
 
     var lengthHeaderSize = 4;
     var messageLength = buffer.readUIntBE(0,lengthHeaderSize);
+    console.log('messageLength',messageLength);
 
     // Then read that number of bytes and see if they're in the buffer
     for (var i = lengthHeaderSize; i < messageLength+lengthHeaderSize; i++){
@@ -59,12 +65,15 @@ function processBuffer(buffer, peerState){
     }
     // if we haven't escaped, grab the message out of the buffer
     var messageToProcess = new Buffer(messageLength);
+    console.log('messageToProcess',messageToProcess);
     buffer.copy(messageToProcess, 0, lengthHeaderSize, messageLength+lengthHeaderSize);
 
     // process it
     processMessage(messageToProcess, peerState);
-    // then clear the buffer
-    buffer = buffer.slice(messageLength, buffer.length);
+    // then return the rest of the buffer
+    buffer = buffer.slice(messageLength+lengthHeaderSize, buffer.length);
+    console.log('buffer',buffer);
+    return buffer;
 }
 
 function readChunk(client, lengthToRead, acquireBuffer){
