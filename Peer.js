@@ -30,13 +30,12 @@ Tracker.makeRequestToTracker(function (peerListObject){
 
     // receive peer's handshake response
     processHandshake(client, function(){
+        var waitingBuffer = new Buffer(0);
+
         // We have finished processing the handshake        
-        processMessage(peerState, client, function(){ // bitfield
-            expressInterest(peerState, client, function(){
-                // processMessage(peerState, client, function(){ // unchoke
-                    console.log('DONE')
-                // });
-            }); // interested
+        client.on('data', function(data){
+            waitingBuffer = Buffer.concat([waitingBuffer, data]);
+            processBuffer(waitingBuffer);
         });
     });
 
@@ -44,6 +43,29 @@ Tracker.makeRequestToTracker(function (peerListObject){
         console.log('disconnected from server');
     });
 });
+
+function processBuffer(buffer, peerState){
+    // Check to see if the buffer has a complete message
+    // messages will be formatted as: <lengthHeader><id><payload>
+
+    var lengthHeader = buffer.readUIntBE(0,4); // 4 is the length of the lengthHeader
+    console.log('lengthHeader', lengthHeader);
+
+    // Then read that number of bytes and see if they're in the buffer
+    for (var i = 0; i < lengthHeader; i++){
+        if (buffer[i] === undefined){
+            return; // escape out of the function if the buffer does not have a full msg
+        }
+    }
+    // if we haven't escaped, grab the message out of the buffer
+    var messageToProcess = new Buffer(lengthHeader);
+    buffer.copy(messageToProcess, 0, 0, lengthHeader);
+
+    // process it
+    processMessage(messageToProcess, peerState);
+    // then clear the buffer
+    buffer = buffer.slice(lengthHeader, buffer.length);
+}
 
 function readChunk(client, lengthToRead, acquireBuffer){
     var buffer = client.read(lengthToRead);
@@ -86,7 +108,7 @@ function processHandshake(client, finishedHandshake){
     ], finishedHandshake);
 }
 
-function processMessage(peerState, client, finishedMessage){
+function processMessage(buffer, peerState){
     // messages will be formatted as: <lengthHeader><id><payload>
 
     // first process the length header
@@ -110,8 +132,9 @@ function processMessage(peerState, client, finishedMessage){
             console.log('read chunk');
             if (id < 4 && lengthHeader === 1){
                 console.log('ID', id);
-                updateState(peerState, 'peerSent', id);
-                processMessage(peerState, client, finishedMessage);
+                updateState(peerState, 'peerSent', id, function(){
+                     processMessage(peerState, client, finishedMessage);
+                });
             }
             if (id === 4 || id === 5){
                 updateWhoHasWhatTable(id, peerState, client, lengthHeader);
@@ -132,7 +155,7 @@ function expressInterest(peerState, client, finishedWrite){
     });
 }
 
-function updateState(peerState, whoSentMessage, id){
+function updateState(peerState, whoSentMessage, id, callback){
     if (whoSentMessage === 'peerSent'){
         if (id === 0){
             console.log('THEY choke');
@@ -164,6 +187,7 @@ function updateState(peerState, whoSentMessage, id){
             }
         }
     }
+    callback();
     console.log('updatedState',peerState);
 }
 
