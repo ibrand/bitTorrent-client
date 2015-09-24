@@ -35,7 +35,7 @@ Tracker.makeRequestToTracker(function (peerListObject){
         // We have finished processing the handshake        
         client.on('data', function(data){
             waitingBuffer = Buffer.concat([waitingBuffer, data]);
-            processBuffer(waitingBuffer);
+            processBuffer(waitingBuffer, peerState);
         });
     });
 
@@ -111,7 +111,6 @@ function processHandshake(client, finishedHandshake){
 function processMessage(messageToProcess, peerState){
     // first process the length header
     var lengthHeader = messageToProcess.length;
-    console.log('LENGTHHEADER INNER',lengthHeader);
     if (lengthHeader === null){
         throw new Error('No length header!');
     }
@@ -120,23 +119,18 @@ function processMessage(messageToProcess, peerState){
         console.log('in keepalive');
         return;
     }
-    for (var i = 0; i < lengthHeader; i++){
+    // get the id and slice it off the message
+    var id = messageToProcess[0];
+    messageToProcess = messageToProcess.slice(1, messageToProcess.length);
+    console.log('id',id);
 
+    if (id < 4){
+        console.log('ID < 4', id);
+        updateState(peerState, 'peerSent', id);
     }
-
-    // // then read one more bit to determine the id of the message
-    // var id = buffer.readUIntBE(0,buffer.length);
-    // console.log('read chunk');
-    // if (id < 4 && lengthHeader === 1){
-    //     console.log('ID', id);
-    //     updateState(peerState, 'peerSent', id, function(){
-    //          processMessage(peerState, client, finishedMessage);
-    //     });
-    // }
-    // if (id === 4 || id === 5){
-    //     updateWhoHasWhatTable(id, peerState, client, lengthHeader);
-    //     processMessage(peerState, client, finishedMessage);
-    // }
+    if (id === 4 || id === 5){
+        updateWhoHasWhatTable(id, messageToProcess, peerState);
+    }
 }
 
 function expressInterest(peerState, client, finishedWrite){
@@ -148,7 +142,7 @@ function expressInterest(peerState, client, finishedWrite){
     });
 }
 
-function updateState(peerState, whoSentMessage, id, callback){
+function updateState(peerState, whoSentMessage, id){
     if (whoSentMessage === 'peerSent'){
         if (id === 0){
             console.log('THEY choke');
@@ -180,37 +174,29 @@ function updateState(peerState, whoSentMessage, id, callback){
             }
         }
     }
-    callback();
     console.log('updatedState',peerState);
 }
 
-function updateWhoHasWhatTable(id, peerState, client, lengthHeader){
+function updateWhoHasWhatTable(id, messageToProcess, peerState){
     if (id === 5){
-        parseBitfield(peerState, client, lengthHeader);
+        parseBitfield(id, messageToProcess, peerState);
     }
 }
 
-function parseBitfield(peerState, client, lengthHeader){
+function parseBitfield(id, messageToProcess, peerState){
     console.log('in parseBitfield',peerState);
     // The bitfield message is variable length, where X is the length of the bitfield.
     // The bitfield is a a bunch of bit flags set to 1 if the peer has the piece and 0 if they don't
-    readChunk(client, lengthHeader, function(error, bitfield){
-        if(bitfield.length !== lengthHeader){
-            // TODO: throw an error here
-            client.end();
-        } else {
-            var bitFlagString = '';
-            // build a string of each bitflag
-            for(var i = 0; i < lengthHeader; i++){
-                bitFlagString += bitfield[i].toString(2);
-            }
-            // change state based off the bitflags
-            for(var i = 0; i < bitFlagString.length; i++){
-                var flag = bitFlagString[i];
-                if (flag === '1'){
-                    whoHasWhichPiece[i] = peerState.hostIp;
-                }
-            }
+    var bitFlagString = '';
+    // build a string of each bitflag
+    for(var i = 0; i < messageToProcess.length; i++){
+        bitFlagString += messageToProcess[i].toString(2);
+    }
+    // change state based off the bitflags
+    for(var i = 0; i < bitFlagString.length; i++){
+        var flag = bitFlagString[i];
+        if (flag === '1'){
+            whoHasWhichPiece[i] = peerState.hostIp;
         }
-    });
+    }
 }
