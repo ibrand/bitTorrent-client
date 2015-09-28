@@ -3,6 +3,7 @@ var net = require('net');
 var async = require('async');
 
 var whoHasWhichPiece = [];
+var downloadedPieces = [];
 
 Tracker.makeRequestToTracker(function (peerListObject){
     // peer object contains IP addresses as keys and ports as values
@@ -30,24 +31,33 @@ Tracker.makeRequestToTracker(function (peerListObject){
 
     // receive peer's handshake response
     processHandshake(client, function(){
-        var waitingBuffer = new Buffer(0);
+        var waitingQueue = new Buffer(0);
 
         // We have finished processing the handshake        
         client.on('data', function(data){
-            waitingBuffer = Buffer.concat([waitingBuffer, data]);
-            var remainingBuffer = processBuffer(waitingBuffer, peerState);
+            waitingQueue = Buffer.concat([waitingQueue, data]);
+            var remainingBuffer = processBuffer(waitingQueue, peerState);
             while (remainingBuffer.length !== 0){
                 remainingBuffer = processBuffer(remainingBuffer, peerState);
             }
         });
 
-        expressInterest(peerState, client, function(){});
+        sendMessages(peerState, client);
+
     });
 
     client.on('end', function(){
         console.log('disconnected from server');
     });
 });
+
+function sendMessages(peerState, client){
+    expressInterest(peerState, client, function(){
+        requestPiece(client, function(){
+            console.log('DONE');
+        });
+    });
+}
 
 function processBuffer(buffer, peerState){
     // Check to see if the buffer has a complete message
@@ -132,8 +142,12 @@ function processMessage(messageToProcess, peerState){
         console.log('ID < 4', id);
         updateState(peerState, 'peerSent', id);
     }
-    if (id === 4 || id === 5){
+    else if (id === 4 || id === 5){
         updateWhoHasWhatTable(id, messageToProcess, peerState);
+    }
+    else {
+        console.log('ID = ', id, 'msg: ', messageToProcess);
+        throw new Error('ID is not accounted for yet in if statements');
     }
 }
 
@@ -142,6 +156,23 @@ function expressInterest(peerState, client, finishedWrite){
     updateState(peerState, 'meSent', 2);
     var b = new Buffer([0, 0, 0, 1, 2]);
     client.write(b, function(){
+        finishedWrite();
+    });
+}
+
+function requestPiece(client, finishedWrite){
+    console.log('in request piece');
+    var pieceLength = 16384 // probably the maximum piece length
+    var randomPiece = Math.floor(Math.random() * whoHasWhichPiece.length);
+
+    var buffer = new Buffer(17);
+    buffer.writeUIntBE(13, 0, 4);
+    buffer.writeUIntBE(6, 4, 1);
+    buffer.writeUIntBE(randomPiece, 5, 4);
+    buffer.writeUIntBE(0, 9, 4);
+    buffer.writeUIntBE(pieceLength, 13, 4);
+
+    client.write(buffer, function(){
         finishedWrite();
     });
 }
