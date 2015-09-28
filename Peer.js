@@ -78,6 +78,7 @@ function processBuffer(buffer, peerState){
     // process it
     processMessage(messageToProcess, peerState);
     // then return the rest of the buffer
+    console.log('BUFFER LENGTH', buffer.slice(messageLength+lengthHeaderSize, buffer.length))
     return buffer.slice(messageLength+lengthHeaderSize, buffer.length);
 }
 
@@ -144,6 +145,9 @@ function processMessage(messageToProcess, peerState){
     }
     else if (id === 4 || id === 5){
         updateWhoHasWhatTable(id, messageToProcess, peerState);
+    }
+    else if (id === 7){
+        console.log('GOT A PIECE');
     }
     else {
         console.log('ID = ', id, 'msg: ', messageToProcess);
