@@ -36,9 +36,10 @@ Tracker.makeRequestToTracker(function (peerListObject){
         // We have finished processing the handshake        
         client.on('data', function(data){
             waitingQueue = Buffer.concat([waitingQueue, data]);
-            var remainingBuffer = processBuffer(waitingQueue, peerState);
-            while (remainingBuffer.length !== 0){
-                remainingBuffer = processBuffer(remainingBuffer, peerState);
+            waitingQueue = processBuffer(waitingQueue, peerState);
+            while (waitingQueue.length !== 0){
+                waitingQueue = processBuffer(waitingQueue, peerState);
+                console.log("waitingQueue",waitingQueue)
             }
         });
 
@@ -61,6 +62,7 @@ function sendMessages(peerState, client){
 
 function processPiece(){
     console.log('in process piece!');
+
 }
 
 function processBuffer(buffer, peerState){
@@ -72,8 +74,7 @@ function processBuffer(buffer, peerState){
     // Then read that number of bytes and see if they're in the buffer
     for (var i = lengthHeaderSize; i < messageLength+lengthHeaderSize; i++){
         if (buffer[i] === undefined){
-            waitingQueue = buffer;
-            console.log('BUFFER', buffer)
+            console.log('finished a read', buffer)
             return new Buffer(0); // escape out of the function if the buffer does not have a full msg
         }
     }
@@ -84,7 +85,6 @@ function processBuffer(buffer, peerState){
     // process it
     processMessage(messageToProcess, peerState);
     // then return the rest of the buffer
-    console.log('BUFFER LENGTH', buffer.slice(messageLength+lengthHeaderSize, buffer.length))
     return buffer.slice(messageLength+lengthHeaderSize, buffer.length);
 }
 
