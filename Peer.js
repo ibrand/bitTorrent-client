@@ -39,10 +39,9 @@ Tracker.makeRequestToTracker(function (peerListObject){
             waitingQueue = Buffer.concat([waitingQueue, data]);
             // Recursively read from the waitingQueue
             waitingQueue = processBuffer(waitingQueue, peerState);
+
+            sendMessages(peerState, client);
         });
-
-        sendMessages(peerState, client);
-
     });
 
     client.on('end', function(){
@@ -51,8 +50,12 @@ Tracker.makeRequestToTracker(function (peerListObject){
 });
 
 function sendMessages(peerState, client){
-    expressInterest(peerState, client);
-    requestPiece(client);
+    if (peerState.am_interested === 0){
+        expressInterest(peerState, client);
+    }
+    if (whoHasWhichPiece.length > 0){
+        requestPiece(client);
+    }
 }
 
 function processPiece(messageToProcess){
