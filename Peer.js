@@ -35,12 +35,10 @@ Tracker.makeRequestToTracker(function (peerListObject){
 
         // We have finished processing the handshake        
         client.on('data', function(data){
+            var keepReading = true;
             waitingQueue = Buffer.concat([waitingQueue, data]);
+            // Recursively read from the waitingQueue
             waitingQueue = processBuffer(waitingQueue, peerState);
-            while (waitingQueue.length !== 0){
-                waitingQueue = processBuffer(waitingQueue, peerState);
-                console.log("waitingQueue",waitingQueue)
-            }
         });
 
         sendMessages(peerState, client);
@@ -69,23 +67,28 @@ function processBuffer(buffer, peerState){
     // Check to see if the buffer has a complete message
     // messages will be formatted as: <lengthHeader><id><payload>
     var lengthHeaderSize = 4;
-    var messageLength = buffer.readUIntBE(0,lengthHeaderSize);
-
-    // Then read that number of bytes and see if they're in the buffer
-    for (var i = lengthHeaderSize; i < messageLength+lengthHeaderSize; i++){
-        if (buffer[i] === undefined){
-            console.log('finished a read', buffer)
-            return new Buffer(0); // escape out of the function if the buffer does not have a full msg
-        }
+    if (buffer.length < lengthHeaderSize){
+        return buffer;
     }
-    // if we haven't escaped, grab the message out of the buffer
-    var messageToProcess = new Buffer(messageLength);
-    buffer.copy(messageToProcess, 0, lengthHeaderSize, messageLength+lengthHeaderSize);
+
+    var messageContentLength = buffer.readUIntBE(0,lengthHeaderSize);
+    var fullMessageLength = lengthHeaderSize + messageContentLength;
+
+    // if the message that we think we should be processing is longer than the buffer,
+    // then we must not have the whole thing yet, so return and read more data
+    if (fullMessageLength > buffer.length){
+        return buffer;
+    }
+
+    // if we haven't returned, we have the whole message!
+    // grab the message out of the buffer for processing
+    var messageToProcess = new Buffer(messageContentLength);
+    buffer.copy(messageToProcess, 0, lengthHeaderSize, fullMessageLength);
 
     // process it
     processMessage(messageToProcess, peerState);
     // then return the rest of the buffer
-    return buffer.slice(messageLength+lengthHeaderSize, buffer.length);
+    return processBuffer(buffer.slice(fullMessageLength, buffer.length), peerState);
 }
 
 function readChunk(client, lengthToRead, acquireBuffer){
