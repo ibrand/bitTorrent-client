@@ -51,11 +51,8 @@ Tracker.makeRequestToTracker(function (peerListObject){
 });
 
 function sendMessages(peerState, client){
-    expressInterest(peerState, client, function(){
-        requestPiece(client, function(){
-            processPiece();
-        });
-    });
+    expressInterest(peerState, client);
+    requestPiece(client);
 }
 
 function processPiece(){
@@ -157,6 +154,7 @@ function processMessage(messageToProcess, peerState){
     }
     else if (id === 7){
         console.log('GOT A PIECE');
+        processPiece();
     }
     else {
         console.log('ID = ', id, 'msg: ', messageToProcess);
@@ -164,16 +162,14 @@ function processMessage(messageToProcess, peerState){
     }
 }
 
-function expressInterest(peerState, client, finishedWrite){
+function expressInterest(peerState, client){
     // interested looks like this: 00012
     updateState(peerState, 'meSent', 2);
-    var b = new Buffer([0, 0, 0, 1, 2]);
-    client.write(b, function(){
-        finishedWrite();
-    });
+    var buffer = new Buffer([0, 0, 0, 1, 2]);
+    client.write(buffer);
 }
 
-function requestPiece(client, finishedWrite){
+function requestPiece(client){
     console.log('in request piece');
     var pieceLength = 16384 // probably the maximum piece length
     var randomPiece = Math.floor(Math.random() * whoHasWhichPiece.length);
@@ -185,9 +181,7 @@ function requestPiece(client, finishedWrite){
     buffer.writeUIntBE(0, 9, 4);
     buffer.writeUIntBE(pieceLength, 13, 4);
 
-    client.write(buffer, function(){
-        finishedWrite();
-    });
+    client.write(buffer);
 }
 
 function updateState(peerState, whoSentMessage, id){
