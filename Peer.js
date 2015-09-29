@@ -55,9 +55,16 @@ function sendMessages(peerState, client){
     requestPiece(client);
 }
 
-function processPiece(){
-    console.log('in process piece!');
-
+function processPiece(messageToProcess){
+    // payload with a 4-byte piece index,
+    // 4-byte block offset within the piece in bytes
+    // then a variable length block containing the raw bytes for the requested piece.
+    // The length of this should be the same as the length requested.
+    console.log('in process piece!', messageToProcess);
+    var pieceIndex = messageToProcess.readUIntBE(0,4);
+    var blockOffset = messageToProcess.readUIntBE(4,8);
+    downloadedPieces[pieceIndex] = messageToProcess.slice(8, messageToProcess.length);
+    console.log('downloadedPieces', downloadedPieces);
 }
 
 function processBuffer(buffer, peerState){
@@ -154,7 +161,7 @@ function processMessage(messageToProcess, peerState){
     }
     else if (id === 7){
         console.log('GOT A PIECE');
-        processPiece();
+        processPiece(messageToProcess);
     }
     else {
         console.log('ID = ', id, 'msg: ', messageToProcess);
