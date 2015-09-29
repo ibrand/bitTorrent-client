@@ -54,9 +54,13 @@ Tracker.makeRequestToTracker(function (peerListObject){
 function sendMessages(peerState, client){
     expressInterest(peerState, client, function(){
         requestPiece(client, function(){
-            console.log('DONE');
+            processPiece();
         });
     });
+}
+
+function processPiece(){
+    console.log('in process piece!');
 }
 
 function processBuffer(buffer, peerState){
@@ -68,7 +72,9 @@ function processBuffer(buffer, peerState){
     // Then read that number of bytes and see if they're in the buffer
     for (var i = lengthHeaderSize; i < messageLength+lengthHeaderSize; i++){
         if (buffer[i] === undefined){
-            return; // escape out of the function if the buffer does not have a full msg
+            waitingQueue = buffer;
+            console.log('BUFFER', buffer)
+            return new Buffer(0); // escape out of the function if the buffer does not have a full msg
         }
     }
     // if we haven't escaped, grab the message out of the buffer
