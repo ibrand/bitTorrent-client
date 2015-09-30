@@ -1,6 +1,7 @@
 var Tracker = require('./Tracker');
 var net = require('net');
 var async = require('async');
+var Message = require('./Message');
 
 var whoHasWhichPiece = [];
 var downloadedPieces = [];
@@ -58,18 +59,6 @@ function sendMessages(peerState, client){
     }
 }
 
-function processPiece(messageToProcess){
-    // payload with a 4-byte piece index,
-    // 4-byte block offset within the piece in bytes
-    // then a variable length block containing the raw bytes for the requested piece.
-    // The length of this should be the same as the length requested.
-    console.log('in process piece!', messageToProcess);
-    var pieceIndex = messageToProcess.readUIntBE(0,4);
-    var blockOffset = messageToProcess.readUIntBE(4,8);
-    downloadedPieces[pieceIndex] = messageToProcess.slice(8, messageToProcess.length);
-    console.log('downloadedPieces', downloadedPieces);
-}
-
 function processBuffer(buffer, peerState){
     // Check to see if the buffer has a complete message
     // messages will be formatted as: <lengthHeader><id><payload>
@@ -93,7 +82,7 @@ function processBuffer(buffer, peerState){
     buffer.copy(messageToProcess, 0, lengthHeaderSize, fullMessageLength);
 
     // process it
-    processMessage(messageToProcess, peerState);
+    Message.processMessage(messageToProcess, peerState);
     // then return the rest of the buffer
     return processBuffer(buffer.slice(fullMessageLength, buffer.length), peerState);
 }
@@ -139,39 +128,6 @@ function processHandshake(client, finishedHandshake){
     ], finishedHandshake);
 }
 
-function processMessage(messageToProcess, peerState){
-    // first process the length header
-    var lengthHeader = messageToProcess.length;
-    if (lengthHeader === null){
-        throw new Error('No length header!');
-    }
-    if (lengthHeader === 0){
-        // then the msg is keepalive so keep connection open
-        console.log('in keepalive');
-        return;
-    }
-    // get the id and slice it off the message
-    var id = messageToProcess[0];
-    messageToProcess = messageToProcess.slice(1, messageToProcess.length);
-    console.log('id',id);
-
-    if (id < 4){
-        console.log('ID < 4', id);
-        updateState(peerState, 'peerSent', id);
-    }
-    else if (id === 4 || id === 5){
-        updateWhoHasWhatTable(id, messageToProcess, peerState);
-    }
-    else if (id === 7){
-        console.log('GOT A PIECE');
-        processPiece(messageToProcess);
-    }
-    else {
-        console.log('ID = ', id, 'msg: ', messageToProcess);
-        throw new Error('ID is not accounted for yet in if statements');
-    }
-}
-
 function expressInterest(peerState, client){
     // interested looks like this: 00012
     updateState(peerState, 'meSent', 2);
@@ -192,72 +148,4 @@ function requestPiece(client){
     buffer.writeUIntBE(pieceLength, 13, 4);
 
     client.write(buffer);
-}
-
-function updateState(peerState, whoSentMessage, id){
-    if (whoSentMessage === 'peerSent'){
-        if (id === 0){
-            console.log('THEY choke');
-            peerState.peer_choking = 1;
-        } else if (id === 1){
-            console.log('THEY unchoked');
-            peerState.peer_choking = 0;
-        } else if (id === 2){
-            console.log('THEY are interested');
-            peerState.peer_interested = 1;
-        } else if (id === 3){
-            console.log('THEY are uninterested');
-            peerState.peer_interested = 0;
-        }
-    } else if (whoSentMessage === 'meSent'){
-        if (whoSentMessage = 'meSent'){
-            if (id === 0){
-                console.log('I SENT choke');
-                peerState.am_choking = 1;
-            } else if (id === 1){
-                console.log('I SENT unchoke');
-                peerState.am_choking = 0;
-            } else if (id === 2){
-                console.log('I SENT interested');
-                peerState.am_interested = 1;
-            } else if (id === 3){
-                console.log('I SENT uninterested');
-                peerState.am_interested = 0;
-            }
-        }
-    }
-    console.log('updatedState',peerState);
-}
-
-function updateWhoHasWhatTable(id, messageToProcess, peerState){
-    if (id === 4){
-        parseHave(messageToProcess, peerState);
-    }
-    if (id === 5){
-        parseBitfield(id, messageToProcess, peerState);
-    }
-}
-
-function parseHave(messageToProcess, peerState){
-    console.log('in parseHave');
-    var pieceIndex = messageToProcess.readUIntBE(0,messageToProcess.length);
-    whoHasWhichPiece[pieceIndex] = peerState.hostIp;
-}
-
-function parseBitfield(id, messageToProcess, peerState){
-    console.log('in parseBitfield');
-    // The bitfield message is variable length, where X is the length of the bitfield.
-    // The bitfield is a a bunch of bit flags set to 1 if the peer has the piece and 0 if they don't
-    var bitFlagString = '';
-    // build a string of each bitflag
-    for(var i = 0; i < messageToProcess.length; i++){
-        bitFlagString += messageToProcess[i].toString(2);
-    }
-    // change state based off the bitflags
-    for(var i = 0; i < bitFlagString.length; i++){
-        var flag = bitFlagString[i];
-        if (flag === '1'){
-            whoHasWhichPiece[i] = peerState.hostIp;
-        }
-    }
 }
