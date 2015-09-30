@@ -1,13 +1,13 @@
-function PeerStates() {
+function PeerState() {
     // an array of PeerState objects
     this.list = {};
 }
 
-PeerStates.prototype.add = function(peerState){
+PeerState.prototype.add = function(peerState){
     this.list[peerState.hostIp] = peerState;
 }
 
-PeerStates.prototype.updateState = function(whichPeer, whoSentMessage, id){
+PeerState.prototype.updateState = function(whichPeer, whoSentMessage, id){
     var newPeerState = this.list[whichPeer];
 
     if (whoSentMessage === 'peerSent'){
@@ -46,23 +46,10 @@ PeerStates.prototype.updateState = function(whichPeer, whoSentMessage, id){
     return newPeerState;
 }
 
-PeerStates.prototype.getState = function(whichPeer){
+PeerState.prototype.getState = function(whichPeer){
     return this.list[whichPeer];
 }
 
-var peerState = {
-    hostIp: '0.0.0',
-    port: '5618',
-    am_choking: 1,
-    peer_choking: 1,
-    am_interested: 0,
-    peer_interested: 0
-};
-
-var ps = new PeerStates();
-ps.add(peerState);
-console.log('ps', ps.getState('0.0.0'))
-
 module.exports = {
-    PeerStates
+    PeerState
 }

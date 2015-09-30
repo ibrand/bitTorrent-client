@@ -1,7 +1,9 @@
 var Tracker = require('./Tracker');
+var PeerStateList = require('./PeerState');
+var PeerStateList = PeerStateList.PeerState; // need to figure out a better way to do this...
+var Message = require('./Message');
 var net = require('net');
 var async = require('async');
-var Message = require('./Message');
 
 var whoHasWhichPiece = [];
 var downloadedPieces = [];
@@ -11,17 +13,19 @@ Tracker.makeRequestToTracker(function (peerListObject){
     var hostIp = '96.126.104.219'; // Tom's IP will stay constant because he is running the test tracker
     var port = peerListObject[hostIp];
 
+    var peerState = new PeerStateList();
     // initialize the states of the peer
-    var peerState = {
+    peerState.add(
+    {
         hostIp: hostIp,
         port: port,
         am_choking: 1,
         peer_choking: 1,
         am_interested: 0,
         peer_interested: 0
-    };
-
-    console.log('peerState', peerState);
+    }
+    );
+    console.log('peerState',peerState);
 
     // open up a socket with the first peer in the obj
     var client = net.connect(port, hostIp, function(){
