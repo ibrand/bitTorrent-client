@@ -1,6 +1,6 @@
 var Tracker = require('./Tracker');
 var PeerStateList = require('./PeerState');
-var PeerStateList = PeerStateList.PeerState; // need to figure out a better way to do this...
+var PeerStateList = PeerStateList.PeerStateList; // need to figure out a better way to do this...
 var Message = require('./Message');
 var net = require('net');
 var async = require('async');
@@ -13,9 +13,9 @@ Tracker.makeRequestToTracker(function (peerListObject){
     var hostIp = '96.126.104.219'; // Tom's IP will stay constant because he is running the test tracker
     var port = peerListObject[hostIp];
 
-    var peerState = new PeerStateList();
+    var peerStates = new PeerStateList();
     // initialize the states of the peer
-    peerState.add(
+    peerStates.add(
     {
         hostIp: hostIp,
         port: port,
@@ -25,7 +25,7 @@ Tracker.makeRequestToTracker(function (peerListObject){
         peer_interested: 0
     }
     );
-    console.log('peerState',peerState);
+    console.log('peerStates',peerStates);
 
     // open up a socket with the first peer in the obj
     var client = net.connect(port, hostIp, function(){
@@ -36,6 +36,8 @@ Tracker.makeRequestToTracker(function (peerListObject){
 
     // receive peer's handshake response
     processHandshake(client, function(){
+        var peerId = hostIp;
+        var peerState = peerStates.getState(hostIp);
         var waitingQueue = new Buffer(0);
 
         // We have finished processing the handshake        
@@ -43,7 +45,7 @@ Tracker.makeRequestToTracker(function (peerListObject){
             var keepReading = true;
             waitingQueue = Buffer.concat([waitingQueue, data]);
             // Recursively read from the waitingQueue
-            waitingQueue = processBuffer(waitingQueue, peerState);
+            waitingQueue = processBuffer(waitingQueue, peerId);
 
             sendMessages(peerState, client);
         });
@@ -63,7 +65,7 @@ function sendMessages(peerState, client){
     }
 }
 
-function processBuffer(buffer, peerState){
+function processBuffer(buffer, peerId){
     // Check to see if the buffer has a complete message
     // messages will be formatted as: <lengthHeader><id><payload>
     var lengthHeaderSize = 4;
@@ -86,7 +88,7 @@ function processBuffer(buffer, peerState){
     buffer.copy(messageToProcess, 0, lengthHeaderSize, fullMessageLength);
 
     // process it
-    Message.processMessage(messageToProcess, peerState);
+    Message.processMessage(messageToProcess, peerId);
     // then return the rest of the buffer
     return processBuffer(buffer.slice(fullMessageLength, buffer.length), peerState);
 }
@@ -132,9 +134,9 @@ function processHandshake(client, finishedHandshake){
     ], finishedHandshake);
 }
 
-function expressInterest(peerState, client){
+function expressInterest(peerId, client){
     // interested looks like this: 00012
-    updateState(peerState, 'meSent', 2);
+    PeerStateList.updateState(peerId, 'meSent', 2);
     var buffer = new Buffer([0, 0, 0, 1, 2]);
     client.write(buffer);
 }
