@@ -89,11 +89,21 @@ function processBuffer(buffer, peerId, peerStates){
     buffer.copy(messageToProcess, 0, lengthHeaderSize, fullMessageLength);
 
     // process it
-    var updatedState = Message.processMessage(messageToProcess, peerId, peerStates, whoHasWhichPiece);
+    var updatedState = Message.processMessage(
+        messageToProcess,
+        peerId,
+        peerStates,
+        whoHasWhichPiece,
+        downloadedPieces);
     // grab the updated table from it if there is one
-    if (updatedState instanceof Array){
-        whoHasWhichPiece = updateState;
+    if (updatedState !== undefined){
+        if (updatedState.hasOwnProperty('whoHasWhichPiece')){
+            whoHasWhichPiece = updatedState['whoHasWhichPiece'];
+        } else if (updatedState.hasOwnProperty('downloadedPieces')){
+            downloadedPieces = updatedState['downloadedPieces'];
+        }
     }
+    
     // then return the rest of the buffer
     return processBuffer(buffer.slice(fullMessageLength, buffer.length), peerId, peerStates);
 }

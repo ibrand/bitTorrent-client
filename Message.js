@@ -1,6 +1,6 @@
 var PeerStateList = require('./PeerState');
 
-function processMessage(messageToProcess, peerId, peerStates, whoHasWhichPiece){
+function processMessage(messageToProcess, peerId, peerStates, whoHasWhichPiece, downloadedPieces){
     // first process the length header
     var lengthHeader = messageToProcess.length;
     if (lengthHeader === null){
@@ -21,11 +21,13 @@ function processMessage(messageToProcess, peerId, peerStates, whoHasWhichPiece){
         peerStates.updateState(peerId, 'peerSent', id);
     }
     else if (id === 4 || id === 5){
-        whoHasWhichPiece = updateWhoHasWhichPiece(id, messageToProcess, peerId, whoHasWhichPiece);
+        // whoHasWhichPiece = updateWhoHasWhichPiece(id, messageToProcess, peerId, whoHasWhichPiece);
+        return {'whoHasWhichPiece': updateWhoHasWhichPiece(id, messageToProcess, peerId, whoHasWhichPiece)};
     }
     else if (id === 7){
         console.log('GOT A PIECE');
-        processPiece(messageToProcess);
+        // downloadedPieces = processPiece(messageToProcess, downloadedPieces);
+        return {'downloadedPieces': processPiece(messageToProcess, downloadedPieces)};
     }
     else {
         console.log('ID = ', id, 'msg: ', messageToProcess);
@@ -59,7 +61,7 @@ function parseBitfield(messageToProcess, peerId, whoHasWhichPiece){
     return whoHasWhichPiece;
 }
 
-function processPiece(messageToProcess){
+function processPiece(messageToProcess, downloadedPieces){
     // payload with a 4-byte piece index,
     // 4-byte block offset within the piece in bytes
     // then a variable length block containing the raw bytes for the requested piece.
@@ -68,6 +70,7 @@ function processPiece(messageToProcess){
     var pieceIndex = messageToProcess.readUIntBE(0,4);
     var blockOffset = messageToProcess.readUIntBE(4,8);
     downloadedPieces[pieceIndex] = messageToProcess.slice(8, messageToProcess.length);
+    return downloadedPieces;
     console.log('downloadedPieces', downloadedPieces);
 }
 
