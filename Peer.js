@@ -37,7 +37,7 @@ Tracker.makeRequestToTracker(function (peerListObject){
     // receive peer's handshake response
     processHandshake(client, function(){
         var peerId = hostIp;
-        var peerState = peerStates.getState(hostIp);
+        var peerState = peerStates.getState(peerId);
         var waitingQueue = new Buffer(0);
 
         // We have finished processing the handshake        
@@ -45,9 +45,9 @@ Tracker.makeRequestToTracker(function (peerListObject){
             var keepReading = true;
             waitingQueue = Buffer.concat([waitingQueue, data]);
             // Recursively read from the waitingQueue
-            waitingQueue = processBuffer(waitingQueue, peerId);
+            waitingQueue = processBuffer(waitingQueue, peerId, peerStates);
 
-            sendMessages(peerState, client);
+            sendMessages(peerId, peerStates, client);
         });
     });
 
@@ -56,16 +56,17 @@ Tracker.makeRequestToTracker(function (peerListObject){
     });
 });
 
-function sendMessages(peerState, client){
+function sendMessages(peerId, peerStates, client){
+    var peerState = peerStates.getState(peerId);
     if (peerState.am_interested === 0){
-        expressInterest(peerState, client);
+        expressInterest(peerId, peerStates, client);
     }
     if (whoHasWhichPiece.length > 0){
         requestPiece(client);
     }
 }
 
-function processBuffer(buffer, peerId){
+function processBuffer(buffer, peerId, peerStates){
     // Check to see if the buffer has a complete message
     // messages will be formatted as: <lengthHeader><id><payload>
     var lengthHeaderSize = 4;
@@ -88,9 +89,13 @@ function processBuffer(buffer, peerId){
     buffer.copy(messageToProcess, 0, lengthHeaderSize, fullMessageLength);
 
     // process it
-    Message.processMessage(messageToProcess, peerId);
+    var updatedState = Message.processMessage(messageToProcess, peerId, peerStates, whoHasWhichPiece);
+    // grab the updated table from it if there is one
+    if (updatedState instanceof Array){
+        whoHasWhichPiece = updateState;
+    }
     // then return the rest of the buffer
-    return processBuffer(buffer.slice(fullMessageLength, buffer.length), peerState);
+    return processBuffer(buffer.slice(fullMessageLength, buffer.length), peerId, peerStates);
 }
 
 function readChunk(client, lengthToRead, acquireBuffer){
@@ -134,9 +139,9 @@ function processHandshake(client, finishedHandshake){
     ], finishedHandshake);
 }
 
-function expressInterest(peerId, client){
+function expressInterest(peerId, peerStates, client){
     // interested looks like this: 00012
-    PeerStateList.updateState(peerId, 'meSent', 2);
+    peerStates.updateState(peerId, 'meSent', 2);
     var buffer = new Buffer([0, 0, 0, 1, 2]);
     client.write(buffer);
 }
