@@ -156,20 +156,34 @@ function processMessage(messageToProcess, peerState){
     messageToProcess = messageToProcess.slice(1, messageToProcess.length);
     console.log('id',id);
 
-    if (id < 4){
-        console.log('ID < 4', id);
-        updateState(peerState, 'peerSent', id);
-    }
-    else if (id === 4 || id === 5){
-        whoHasWhichPiece = updateWhoHasWhatTable(id, messageToProcess, peerState);
-    }
-    else if (id === 7){
-        console.log('GOT A PIECE');
-        processPiece(messageToProcess);
-    }
-    else {
-        console.log('ID = ', id, 'msg: ', messageToProcess);
-        throw new Error('ID is not accounted for yet in if statements');
+    switch(id){
+        case flags.CHOKE_MESSAGE:
+            updateState(peerState, 'peerSent', id);
+            break;
+        case flags.UNCHOKE_MESSAGE:
+            updateState(peerState, 'peerSent', id);
+            break;
+        case flags.INTERESTED_MESSAGE:
+            updateState(peerState, 'peerSent', id);
+            break;
+        case flags.UNINTERESTED_MESSAGE:
+            updateState(peerState, 'peerSent', id);
+            break;
+        case flags.HAVE_MESSAGE:
+            var pieceIndex = messageToProcess.readUIntBE(0,messageToProcess.length);
+            whoHasWhichPiece = updateWhoHasWhichPiece(peerState.hostIp, pieceIndex);
+            break;
+        case flags.BITFIELD_MESSAGE:
+            var bitFlagString = parseBitfield(messageToProcess);
+            // change state based off the bitflags
+            whoHasWhichPiece = updateWhoHasWhichPiece(peerState.hostIp, bitFlagString);
+            break;
+        case flags.PIECE_MESSAGE:
+            console.log('GOT A PIECE');
+            processPiece(messageToProcess);
+            break;
+        default:
+            throw new Error('Cant yet handle that kind of message');
     }
 }
 
