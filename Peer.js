@@ -230,18 +230,18 @@ function updateState(peerState, whoSentMessage, id){
     console.log('updatedState',peerState);
 }
 
-function updateWhoHasWhatTable(id, messageToProcess, peerState){
-    if (id === flags.HAVE_MESSAGE){
-        var pieceIndex = messageToProcess.readUIntBE(0,messageToProcess.length);
-        whoHasWhichPiece[pieceIndex] = peerState.hostIp;
+function updateWhoHasWhichPiece(hostIp, indexesToAddTo){
+    if (typeof indexesToAddTo === 'number'){
+        console.log('indexesToAddTo in Have', indexesToAddTo);
+        whoHasWhichPiece[indexesToAddTo] = hostIp;
     }
-    if (id === flags.BITFIELD_MESSAGE){
-        var bitFlagString = parseBitfield(messageToProcess);
+    else if (typeof indexesToAddTo === 'string'){
         // change state based off the bitflags
-        for(var i = 0; i < bitFlagString.length; i++){
-            var flag = bitFlagString[i];
+        console.log('indexesToAddTo in Bitfield', indexesToAddTo);
+        for(var i = 0; i < indexesToAddTo.length; i++){
+            var flag = indexesToAddTo[i];
             if (flag === '1'){
-                whoHasWhichPiece[i] = peerState.hostIp;
+                whoHasWhichPiece[i] = hostIp;
             }
         }
     }
@@ -256,5 +256,6 @@ function parseBitfield(messageToProcess){
     for(var i = 0; i < messageToProcess.length; i++){
         bitFlagString += messageToProcess[i].toString(2);
     }
+    console.log('bitflagstring', bitFlagString)
     return bitFlagString;
 }
