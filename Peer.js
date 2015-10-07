@@ -53,7 +53,7 @@ function sendMessages(peerState, client){
     if (peerState.am_interested === 0){
         expressInterest(peerState, client);
     }
-    if (whoHasWhichPiece.length > 0){
+    if (whoHasWhichPiece.length > 0 && downloadedPieces.length !== whoHasWhichPiece.length){
         requestPiece(client);
     }
 }
@@ -197,7 +197,9 @@ function requestPiece(client){
     console.log('in request piece');
     var pieceLength = 16384; // probably the maximum piece length
     var randomPiece = Math.floor(Math.random() * whoHasWhichPiece.length);
-
+    while (downloadedPieces[randomPiece] !== undefined){
+        randomPiece = Math.floor(Math.random() * whoHasWhichPiece.length);
+    }
     var buffer = new Buffer(17);
     buffer.writeUIntBE(13, 0, 4);
     buffer.writeUIntBE(6, 4, 1);
