@@ -45,6 +45,7 @@ Tracker.makeRequestToTracker(function (peerListObject){
     });
 
     client.on('end', function(){
+        writePiecesToFile();
         console.log('disconnected from server');
     });
 });
@@ -272,4 +273,11 @@ function parseBitfield(messageToProcess){
         bitFlagString += messageToProcess[i].toString(2);
     }
     return bitFlagString;
+}
+
+function writePiecesToFile(){
+    var fs = require('fs');
+    var toWrite = Buffer.concat(downloadedPieces, downloadedPieces.length);
+
+    fs.writeFileSync('test.jpg', toWrite);
 }
