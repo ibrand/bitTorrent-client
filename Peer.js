@@ -5,6 +5,7 @@ var flags = require('./flags');
 
 var whoHasWhichPiece = [];
 var downloadedPieces = [];
+var requestedPieces = []; // stores a number indicating up to which block I've requested
 
 Tracker.makeRequestToTracker(function (peerListObject){
     // peer object contains IP addresses as keys and ports as values
@@ -180,7 +181,7 @@ function processMessage(messageToProcess, peerState){
         case flags.PIECE_MESSAGE:
             console.log('GOT A PIECE');
             downloadedPieces = updateDownloadedPieces(messageToProcess);
-            console.log('downloadedPieces', downloadedPieces);
+            // console.log('downloadedPieces', downloadedPieces);
             break;
         default:
             throw new Error('Cant yet handle that kind of message');
@@ -209,6 +210,13 @@ function requestPiece(client){
     buffer.writeUIntBE(pieceLength, 13, 4);
 
     client.write(buffer);
+    requestedPieces = updateRequestedPieces(randomPiece, 1);
+}
+
+function updateRequestedPieces(piece, whichBlockHasBeenRequested){
+    requestedPieces[piece] = whichBlockHasBeenRequested;
+    console.log('requestedPieces',requestedPieces);
+    return requestedPieces;
 }
 
 function updateState(peerState, whoSentMessage, id){
