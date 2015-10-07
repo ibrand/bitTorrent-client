@@ -67,7 +67,7 @@ function _parse(input, currentDataStructure) {
         var results = _parse(input.slice(1), currentDataStructure); // remove the 'l' character
         while(results.result !== LIST_END){
             currentDataStructure.push(results.result);
-            var results = _parse(results.remainingInput, currentDataStructure);
+            results = _parse(results.remainingInput, currentDataStructure);
         }
         return packageResults(currentDataStructure, results.remainingInput);
     }
@@ -142,7 +142,7 @@ function parseByteString(input){
     var lengthOfByteString = '';
 
     // parse the number that determines the length of the byte string
-    digitToExamine = String.fromCharCode(input[i]);
+    var digitToExamine = String.fromCharCode(input[i]);
     while (digitToExamine !== ':'){
         lengthOfByteString += digitToExamine;
         i++;
@@ -166,4 +166,4 @@ module.exports = {
     parseBuffer: parseBuffer,
     parseByteString: parseByteString,
     parseInteger: parseInteger
-}
+};
