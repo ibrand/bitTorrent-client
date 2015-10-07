@@ -55,9 +55,18 @@ function sendMessages(peerState, client){
     if (peerState.am_interested === 0){
         expressInterest(peerState, client);
     }
-    if (whoHasWhichPiece.length > 0 && downloadedPieces.length !== whoHasWhichPiece.length){
+    if (whoHasWhichPiece.length > 0 && downloadedPiecesStillHasSpace()){
         requestPiece(client);
     }
+}
+
+function downloadedPiecesStillHasSpace(){
+    for (var i = 0; i < whoHasWhichPiece.length; i++){
+        if (downloadedPieces[i] === undefined){
+            return true;
+        }
+    }
+    return false;
 }
 
 function updateDownloadedPieces(messageToProcess){
@@ -181,7 +190,7 @@ function processMessage(messageToProcess, peerState){
         case flags.PIECE_MESSAGE:
             console.log('GOT A PIECE');
             downloadedPieces = updateDownloadedPieces(messageToProcess);
-            // console.log('downloadedPieces', downloadedPieces);
+            console.log('downloadedPieces', downloadedPieces);
             break;
         default:
             throw new Error('Cant yet handle that kind of message');
@@ -215,7 +224,7 @@ function requestPiece(client){
 
 function updateRequestedPieces(piece, whichBlockHasBeenRequested){
     requestedPieces[piece] = whichBlockHasBeenRequested;
-    console.log('requestedPieces',requestedPieces);
+    // console.log('requestedPieces',requestedPieces);
     return requestedPieces;
 }
 
@@ -285,7 +294,7 @@ function parseBitfield(messageToProcess){
 
 function writePiecesToFile(){
     var fs = require('fs');
-    var toWrite = Buffer.concat(downloadedPieces, downloadedPieces.length);
+    var toWrite = Buffer.concat(downloadedPieces);
 
     fs.writeFileSync('test.jpg', toWrite);
 }
