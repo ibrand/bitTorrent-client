@@ -36,7 +36,6 @@ Tracker.makeRequestToTracker(function (peerListObject){
 
         // We have finished processing the handshake
         client.on('data', function(data){
-            var keepReading = true;
             waitingQueue = Buffer.concat([waitingQueue, data]);
             // Recursively read from the waitingQueue
             waitingQueue = processBuffer(waitingQueue, peerState);
@@ -136,7 +135,7 @@ function processHandshake(client, finishedHandshake){
         }, function(buffer, callback) {
             console.log('peer_id',buffer.toString());
             callback();
-        },
+        }
     ], finishedHandshake);
 }
 
@@ -196,7 +195,7 @@ function expressInterest(peerState, client){
 
 function requestPiece(client){
     console.log('in request piece');
-    var pieceLength = 16384 // probably the maximum piece length
+    var pieceLength = 16384; // probably the maximum piece length
     var randomPiece = Math.floor(Math.random() * whoHasWhichPiece.length);
 
     var buffer = new Buffer(17);
@@ -225,7 +224,7 @@ function updateState(peerState, whoSentMessage, id){
             peerState.peer_interested = 0;
         }
     } else if (whoSentMessage === 'meSent'){
-        if (whoSentMessage = 'meSent'){
+        if (whoSentMessage === 'meSent'){
             if (id === 0){
                 console.log('I SENT choke');
                 peerState.am_choking = 1;
@@ -270,6 +269,6 @@ function parseBitfield(messageToProcess){
     for(var i = 0; i < messageToProcess.length; i++){
         bitFlagString += messageToProcess[i].toString(2);
     }
-    console.log('bitflagstring', bitFlagString)
+    console.log('bitflagstring', bitFlagString);
     return bitFlagString;
 }
