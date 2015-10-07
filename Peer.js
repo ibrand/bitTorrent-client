@@ -1,6 +1,7 @@
 var Tracker = require('./Tracker');
 var net = require('net');
 var async = require('async');
+var flags = require('./flags');
 
 var whoHasWhichPiece = [];
 var downloadedPieces = [];
@@ -33,7 +34,7 @@ Tracker.makeRequestToTracker(function (peerListObject){
     processHandshake(client, function(){
         var waitingQueue = new Buffer(0);
 
-        // We have finished processing the handshake        
+        // We have finished processing the handshake
         client.on('data', function(data){
             var keepReading = true;
             waitingQueue = Buffer.concat([waitingQueue, data]);
@@ -160,7 +161,7 @@ function processMessage(messageToProcess, peerState){
         updateState(peerState, 'peerSent', id);
     }
     else if (id === 4 || id === 5){
-        updateWhoHasWhatTable(id, messageToProcess, peerState);
+        whoHasWhichPiece = updateWhoHasWhatTable(id, messageToProcess, peerState);
     }
     else if (id === 7){
         console.log('GOT A PIECE');
@@ -230,34 +231,30 @@ function updateState(peerState, whoSentMessage, id){
 }
 
 function updateWhoHasWhatTable(id, messageToProcess, peerState){
-    if (id === 4){
-        parseHave(messageToProcess, peerState);
+    if (id === flags.HAVE_MESSAGE){
+        var pieceIndex = messageToProcess.readUIntBE(0,messageToProcess.length);
+        whoHasWhichPiece[pieceIndex] = peerState.hostIp;
     }
-    if (id === 5){
-        parseBitfield(id, messageToProcess, peerState);
+    if (id === flags.BITFIELD_MESSAGE){
+        var bitFlagString = parseBitfield(messageToProcess);
+        // change state based off the bitflags
+        for(var i = 0; i < bitFlagString.length; i++){
+            var flag = bitFlagString[i];
+            if (flag === '1'){
+                whoHasWhichPiece[i] = peerState.hostIp;
+            }
+        }
     }
+    return whoHasWhichPiece;
 }
 
-function parseHave(messageToProcess, peerState){
-    console.log('in parseHave');
-    var pieceIndex = messageToProcess.readUIntBE(0,messageToProcess.length);
-    whoHasWhichPiece[pieceIndex] = peerState.hostIp;
-}
-
-function parseBitfield(id, messageToProcess, peerState){
+function parseBitfield(messageToProcess){
     console.log('in parseBitfield');
-    // The bitfield message is variable length, where X is the length of the bitfield.
     // The bitfield is a a bunch of bit flags set to 1 if the peer has the piece and 0 if they don't
     var bitFlagString = '';
     // build a string of each bitflag
     for(var i = 0; i < messageToProcess.length; i++){
         bitFlagString += messageToProcess[i].toString(2);
     }
-    // change state based off the bitflags
-    for(var i = 0; i < bitFlagString.length; i++){
-        var flag = bitFlagString[i];
-        if (flag === '1'){
-            whoHasWhichPiece[i] = peerState.hostIp;
-        }
-    }
+    return bitFlagString;
 }
