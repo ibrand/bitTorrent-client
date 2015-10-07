@@ -58,16 +58,15 @@ function sendMessages(peerState, client){
     }
 }
 
-function processPiece(messageToProcess){
+function updateDownloadedPieces(messageToProcess){
     // payload with a 4-byte piece index,
     // 4-byte block offset within the piece in bytes
     // then a variable length block containing the raw bytes for the requested piece.
     // The length of this should be the same as the length requested.
-    console.log('in process piece!', messageToProcess);
     var pieceIndex = messageToProcess.readUIntBE(0,4);
     var blockOffset = messageToProcess.readUIntBE(4,8);
     downloadedPieces[pieceIndex] = messageToProcess.slice(8, messageToProcess.length);
-    console.log('downloadedPieces', downloadedPieces);
+    return downloadedPieces;
 }
 
 function processBuffer(buffer, peerState){
@@ -179,7 +178,8 @@ function processMessage(messageToProcess, peerState){
             break;
         case flags.PIECE_MESSAGE:
             console.log('GOT A PIECE');
-            processPiece(messageToProcess);
+            downloadedPieces = updateDownloadedPieces(messageToProcess);
+            console.log('downloadedPieces', downloadedPieces);
             break;
         default:
             throw new Error('Cant yet handle that kind of message');
@@ -269,6 +269,5 @@ function parseBitfield(messageToProcess){
     for(var i = 0; i < messageToProcess.length; i++){
         bitFlagString += messageToProcess[i].toString(2);
     }
-    console.log('bitflagstring', bitFlagString);
     return bitFlagString;
 }
