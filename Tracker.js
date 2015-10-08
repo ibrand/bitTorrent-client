@@ -15,7 +15,7 @@ function parseResponse(response){
     for(var i = 0; i < peerBuffer.length; i = i+6){
         var ip = '';
         for(var j = i; j < i+4; j++){
-            ip += peerBuffer[j] + '.'
+            ip += peerBuffer[j] + '.';
         }
         ip = ip.substring(0, ip.length-1); // slice off final '.'
         var port = peerBuffer.readUIntBE(i+4, 2);
@@ -96,4 +96,4 @@ function encodeBufferToURI(s) {
 module.exports = {
     makeRequestToTracker: makeHTTPRequest,
     getRequestParams: getRequestParams
-}
+};
