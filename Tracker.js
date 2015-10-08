@@ -95,5 +95,6 @@ function encodeBufferToURI(s) {
 
 module.exports = {
     makeRequestToTracker: makeHTTPRequest,
-    getRequestParams: getRequestParams
+    getRequestParams: getRequestParams,
+    decodedFile: decodedFile
 };

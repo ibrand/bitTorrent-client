@@ -12,6 +12,9 @@ Tracker.makeRequestToTracker(function (peerListObject){
     var hostIp = '96.126.104.219'; // Tom's IP will stay constant because he is running the test tracker
     var port = peerListObject[hostIp];
 
+    var torrentMetafile = Tracker.decodedFile;
+    console.log('torrentMetafile', torrentMetafile);
+
     // initialize the states of the peer
     var peerState = {
         hostIp: hostIp,
