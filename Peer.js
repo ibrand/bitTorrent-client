@@ -1,5 +1,6 @@
 var Tracker = require('./Tracker');
 var net = require('net');
+var crypto = require('crypto');
 var async = require('async');
 var flags = require('./flags');
 
@@ -42,7 +43,7 @@ Tracker.makeRequestToTracker(function (peerListObject){
         client.on('data', function(data){
             waitingQueue = Buffer.concat([waitingQueue, data]);
             // Recursively read from the waitingQueue
-            waitingQueue = processBuffer(waitingQueue, peerState);
+            waitingQueue = processBuffer(waitingQueue, peerState, torrentMetafile);
 
             sendMessages(peerState, client);
         });
@@ -72,7 +73,7 @@ function downloadedPiecesStillHasSpace(){
     return false;
 }
 
-function updateDownloadedPieces(messageToProcess){
+function updateDownloadedPieces(messageToProcess, torrentMetafile){
     // payload with a 4-byte piece index,
     // 4-byte block offset within the piece in bytes
     // then a variable length block containing the raw bytes for the requested piece.
@@ -80,10 +81,14 @@ function updateDownloadedPieces(messageToProcess){
     var pieceIndex = messageToProcess.readUIntBE(0,4);
     var blockOffset = messageToProcess.readUIntBE(4,8);
     downloadedPieces[pieceIndex] = messageToProcess.slice(8, messageToProcess.length);
+    if (!validatePiece(torrentMetafile,pieceIndex)){
+        downloadedPieces[pieceIndex] = undefined;
+        requestedPieces[pieceIndex] = undefined;
+    }
     return downloadedPieces;
 }
 
-function processBuffer(buffer, peerState){
+function processBuffer(buffer, peerState, torrentMetafile){
     // Check to see if the buffer has a complete message
     // messages will be formatted as: <lengthHeader><id><payload>
     var lengthHeaderSize = 4;
@@ -106,9 +111,9 @@ function processBuffer(buffer, peerState){
     buffer.copy(messageToProcess, 0, lengthHeaderSize, fullMessageLength);
 
     // process it
-    processMessage(messageToProcess, peerState);
+    processMessage(messageToProcess, peerState, torrentMetafile);
     // then return the rest of the buffer
-    return processBuffer(buffer.slice(fullMessageLength, buffer.length), peerState);
+    return processBuffer(buffer.slice(fullMessageLength, buffer.length), peerState, torrentMetafile);
 }
 
 function readChunk(client, lengthToRead, acquireBuffer){
@@ -152,7 +157,7 @@ function processHandshake(client, finishedHandshake){
     ], finishedHandshake);
 }
 
-function processMessage(messageToProcess, peerState){
+function processMessage(messageToProcess, peerState, torrentMetafile){
     // first process the length header
     var lengthHeader = messageToProcess.length;
     if (lengthHeader === null){
@@ -192,8 +197,8 @@ function processMessage(messageToProcess, peerState){
             break;
         case flags.PIECE_MESSAGE:
             console.log('GOT A PIECE');
-            downloadedPieces = updateDownloadedPieces(messageToProcess);
-            console.log('downloadedPieces', downloadedPieces);
+            downloadedPieces = updateDownloadedPieces(messageToProcess, torrentMetafile);
+            // console.log('downloadedPieces', downloadedPieces);
             break;
         default:
             throw new Error('Cant yet handle that kind of message');
@@ -223,6 +228,23 @@ function requestPiece(client){
 
     client.write(buffer);
     requestedPieces = updateRequestedPieces(randomPiece, 1);
+}
+
+function validatePiece(torrentMetafile, indexOfFinishedPiece){
+    // locate the correct hash in the torrentMetafile file
+    var offsetInPiecesBuffer = indexOfFinishedPiece*20; // each hash is 20 bytes long
+    var validationHash = torrentMetafile.info.pieces.toString('hex',offsetInPiecesBuffer, offsetInPiecesBuffer+20);
+
+    // hash the piece in question
+    var sha1 = crypto.createHash('sha1');
+    sha1.update(downloadedPieces[indexOfFinishedPiece]);
+    var pieceHash = sha1.digest('hex');
+
+    // compare the pieces
+    if (pieceHash === validationHash){
+        return true;
+    }
+    return false;
 }
 
 function updateRequestedPieces(piece, whichBlockHasBeenRequested){
